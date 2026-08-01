@@ -1,5 +1,6 @@
 "use server";
 
+import { clerkClient } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/db";
@@ -15,6 +16,86 @@ import { recordAudit } from "@/lib/audit";
  * endpoint — gating only the page that renders the buttons would leave these
  * callable by anyone who knows they exist.
  */
+
+export type OwnerDetail = {
+  email: string | null;
+  createdAt: string | null;
+  lastActiveAt: string | null;
+  sessions: {
+    ip: string | null;
+    location: string | null;
+    browser: string | null;
+    status: string;
+  }[];
+};
+
+export type OwnerLookupResult =
+  | { ok: true; owner: OwnerDetail }
+  | { ok: false; error: string };
+
+/**
+ * Resolves a site owner to a person, on demand.
+ *
+ * Clerk already holds accounts, sessions, devices and the IPs they were used
+ * from, so this reads from there rather than duplicating any of it into our
+ * database. Nothing returned here is stored — it is fetched when an admin asks
+ * and forgotten after, which keeps the data where it already is and out of our
+ * retention obligations.
+ *
+ * Called per row rather than for the whole table: user lookups count against
+ * Clerk's rate limit (100 requests per 10s in development).
+ */
+export async function lookupOwner(userId: string): Promise<OwnerLookupResult> {
+  await requireAdmin();
+
+  // Seeded demo sites carry a placeholder owner that is not a real account.
+  if (!userId.startsWith("user_")) {
+    return { ok: false, error: "Not a real account (seeded demo site)." };
+  }
+
+  try {
+    const clerk = await clerkClient();
+    const [user, sessions] = await Promise.all([
+      clerk.users.getUser(userId),
+      clerk.sessions.getSessionList({ userId, limit: 5 }),
+    ]);
+
+    const format = (ms: number | null | undefined) =>
+      ms ? new Date(ms).toLocaleDateString() : null;
+
+    return {
+      ok: true,
+      owner: {
+        email:
+          user.primaryEmailAddress?.emailAddress ??
+          user.emailAddresses[0]?.emailAddress ??
+          null,
+        createdAt: format(user.createdAt),
+        lastActiveAt: format(user.lastActiveAt),
+        sessions: sessions.data.map((s) => {
+          const a = s.latestActivity;
+          const place = [a?.city, a?.country].filter(Boolean).join(", ");
+          const browser = [a?.browserName, a?.deviceType]
+            .filter(Boolean)
+            .join(" · ");
+          return {
+            ip: a?.ipAddress ?? null,
+            location: place || null,
+            browser: browser || null,
+            status: s.status,
+          };
+        }),
+      },
+    };
+  } catch {
+    // Usually a deleted account or a rate limit; neither is worth a stack
+    // trace in an admin panel.
+    return {
+      ok: false,
+      error: "Couldn't reach Clerk for that account.",
+    };
+  }
+}
 
 async function siteSlugs(siteId: string) {
   const db = getDb();

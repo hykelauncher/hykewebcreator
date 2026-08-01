@@ -7,6 +7,7 @@ import { isAdmin } from "@/lib/admin";
 import { getSiteUrl } from "@/lib/tenant";
 import { getTheme } from "@/lib/themes";
 import { AdminSiteActions } from "./site-actions";
+import { OwnerLookup } from "./owner-lookup";
 
 /**
  * Platform admin.
@@ -169,6 +170,9 @@ export default async function AdminPage() {
                     {new Date(r.createdAt).toLocaleString()} · owner{" "}
                     <code>{r.ownerId.slice(0, 16)}…</code>
                   </p>
+                  <div className="mt-2">
+                    <OwnerLookup userId={r.ownerId} />
+                  </div>
                 </li>
               ))}
             </ul>
@@ -230,10 +234,13 @@ export default async function AdminPage() {
                           </span>
                         ) : null}
                       </td>
-                      <td className="px-4 py-3">
-                        <code className="text-xs text-slate-400">
+                      <td className="px-4 py-3 align-top">
+                        <code className="block text-xs text-slate-500">
                           {site.ownerId.slice(0, 16)}…
                         </code>
+                        <div className="mt-1.5">
+                          <OwnerLookup userId={site.ownerId} />
+                        </div>
                       </td>
                       <td className="px-4 py-3">
                         <span className="inline-flex items-center gap-2 text-slate-300">

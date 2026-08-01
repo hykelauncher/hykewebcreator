@@ -109,7 +109,19 @@ export function EditorClient({
     setPublishing(true);
     setPublishError(null);
 
-    const result = await publishPage(pageId, data);
+    let result;
+    try {
+      result = await publishPage(pageId, data);
+    } catch {
+      // A dropped connection rejects here rather than returning an error, and
+      // an unhandled rejection would leave Publish looking broken with nothing
+      // explaining why. The draft is safe either way.
+      setPublishing(false);
+      setPublishError(
+        "Couldn't reach the server. Your work is saved — try publishing again.",
+      );
+      return;
+    }
 
     setPublishing(false);
     if (!result.ok) {
