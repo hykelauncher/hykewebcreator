@@ -18,7 +18,7 @@ const isStaticAsset = /\.(?:[a-z0-9]+)$/i;
 // into /render — they need the real Host header to know which tenant they're
 // answering for. (`sitemap.xml` and `robots.txt` already fall through via the
 // extension check below.)
-const TENANT_PASSTHROUGH = ["/api/og", "/api/enquiries"];
+const TENANT_PASSTHROUGH = ["/api/og", "/api/enquiries", "/api/subscribe"];
 
 export function proxy(request: NextRequest, event: NextFetchEvent) {
   const { pathname } = request.nextUrl;

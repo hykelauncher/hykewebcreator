@@ -84,6 +84,30 @@ export function withDemoImages(
         }
         break;
       }
+      case "ProductGrid": {
+        const items = props.items as { image: string }[] | undefined;
+        if (Array.isArray(items)) {
+          props.items = items.map((item, i) => ({
+            ...item,
+            // Portrait, since product cards are 3:4.
+            image: fill(item.image, demoPhoto(`${seed}-${i}`, 800, 1067)) as string,
+          }));
+        }
+        break;
+      }
+      case "CategoryTiles": {
+        const items = props.items as { image: string }[] | undefined;
+        if (Array.isArray(items)) {
+          props.items = items.map((item, i) => ({
+            ...item,
+            image: fill(item.image, demoPhoto(`${seed}-${i}`, 800, 1000)) as string,
+          }));
+        }
+        break;
+      }
+      case "PromoBanner":
+        props.image = fill(props.image, demoPhoto(seed, 1600, 900));
+        break;
       case "Hero":
         props.backgroundImage = fill(props.backgroundImage, demoPhoto(seed, 1600, 900));
         break;

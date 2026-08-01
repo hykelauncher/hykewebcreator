@@ -7,7 +7,7 @@ import { pages, sites } from "@/db/schema";
 import { puckConfig } from "@/lib/puck-config";
 import { getSiteUrl } from "@/lib/tenant";
 import { themeStyle } from "@/lib/themes";
-import { SitePlugins } from "@/components/site-plugins";
+import { SiteAnnouncement, SitePlugins } from "@/components/site-plugins";
 import { readPluginConfig } from "@/lib/plugins";
 
 export const revalidate = 60;
@@ -108,6 +108,7 @@ export default async function TenantSitePage({
   // OS-driven dark mode that only the default theme responds to.
   return (
     <div data-theme={site.themeId} style={themeStyle(site.themeId)}>
+      <SiteAnnouncement plugins={site.plugins} />
       <Render
         config={puckConfig}
         data={page.publishedContent as never}

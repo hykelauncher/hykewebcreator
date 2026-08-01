@@ -1,6 +1,7 @@
 import type { Config, Slot } from "@puckeditor/core";
 import { ImageUploadField } from "@/components/image-upload-field";
 import { EnquiryForm, type EnquiryField } from "@/components/enquiry-form";
+import { NewsletterForm } from "@/components/newsletter-form";
 import {
   GRADIENT_OPTIONS,
   GRADIENTS,
@@ -202,6 +203,36 @@ type Components = {
   };
   ArticleList: {
     items: { title: string; summary: string; date: string; href: string }[];
+  };
+  ProductGrid: {
+    columns: "2" | "3" | "4";
+    items: {
+      name: string;
+      price: string;
+      comparePrice: string;
+      image: string;
+      badge: string;
+      href: string;
+    }[];
+  };
+  CategoryTiles: {
+    items: { label: string; caption: string; image: string; href: string }[];
+  };
+  PromoBanner: {
+    eyebrow: string;
+    heading: string;
+    text: string;
+    image: string;
+    buttonLabel: string;
+    buttonHref: string;
+    align: "left" | "center";
+  };
+  NewsletterSignup: {
+    heading: string;
+    description: string;
+    buttonLabel: string;
+    successMessage: string;
+    smallprint: string;
   };
 };
 
@@ -562,6 +593,283 @@ export const puckConfig: Config<{ components: Components }> = {
             ))}
           </div>
         </div>
+      ),
+    },
+    ProductGrid: {
+      fields: {
+        columns: {
+          type: "radio",
+          options: [
+            { label: "2", value: "2" },
+            { label: "3", value: "3" },
+            { label: "4", value: "4" },
+          ],
+        },
+        items: {
+          type: "array",
+          arrayFields: {
+            name: { type: "text" },
+            price: { type: "text" },
+            comparePrice: { type: "text", label: "Was (optional)" },
+            image: { type: "custom", render: ImageUploadField },
+            badge: { type: "text", label: "Badge (optional)" },
+            href: { type: "text", label: "Link" },
+          },
+          defaultItemProps: {
+            name: "Product name",
+            price: "£120",
+            comparePrice: "",
+            image: "",
+            badge: "",
+            href: "#",
+          },
+          getItemSummary: (item) => item.name || "Product",
+        },
+      },
+      defaultProps: {
+        columns: "4",
+        items: Array.from({ length: 4 }, () => ({
+          name: "Product name",
+          price: "£120",
+          comparePrice: "",
+          image: "",
+          badge: "",
+          href: "#",
+        })),
+      },
+      render: ({ columns, items }) => (
+        <div className={`${SECTION} ${SECTION_Y}`}>
+          <div
+            className={`grid gap-x-6 gap-y-10 ${
+              columns === "2"
+                ? "grid-cols-2"
+                : columns === "3"
+                  ? "grid-cols-2 lg:grid-cols-3"
+                  : "grid-cols-2 lg:grid-cols-4"
+            }`}
+          >
+            {items.map((item, i) => (
+              <a key={i} href={item.href} className="group block">
+                <div className="relative mb-4 aspect-[3/4] overflow-hidden bg-surface-subtle">
+                  {item.image ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={item.image}
+                      alt={item.name}
+                      className="h-full w-full object-cover transition duration-700 ease-out group-hover:scale-[1.04]"
+                    />
+                  ) : (
+                    <div className={`h-full w-full ${PLACEHOLDER}`}>
+                      Upload a photo
+                    </div>
+                  )}
+                  {item.badge ? (
+                    <span className="absolute left-3 top-3 bg-foreground px-2.5 py-1 text-eyebrow font-semibold uppercase tracking-[0.14em] text-background">
+                      {item.badge}
+                    </span>
+                  ) : null}
+                </div>
+                <h3 className="font-display text-lead leading-snug">
+                  {item.name}
+                </h3>
+                <p className="mt-1 flex items-baseline gap-2 text-sm">
+                  <span className="font-medium">{item.price}</span>
+                  {item.comparePrice ? (
+                    <span className="text-muted line-through">
+                      {item.comparePrice}
+                    </span>
+                  ) : null}
+                </p>
+              </a>
+            ))}
+          </div>
+        </div>
+      ),
+    },
+    CategoryTiles: {
+      fields: {
+        items: {
+          type: "array",
+          arrayFields: {
+            label: { type: "text" },
+            caption: { type: "text" },
+            image: { type: "custom", render: ImageUploadField },
+            href: { type: "text" },
+          },
+          defaultItemProps: {
+            label: "Category",
+            caption: "Shop now",
+            image: "",
+            href: "#",
+          },
+          getItemSummary: (item) => item.label || "Category",
+        },
+      },
+      defaultProps: {
+        items: [
+          { label: "Women", caption: "Shop now", image: "", href: "#" },
+          { label: "Men", caption: "Shop now", image: "", href: "#" },
+          { label: "Accessories", caption: "Shop now", image: "", href: "#" },
+        ],
+      },
+      render: ({ items }) => (
+        <div className={`${SECTION} ${SECTION_Y}`}>
+          <div className="grid gap-4 sm:grid-cols-3">
+            {items.map((item, i) => (
+              <a
+                key={i}
+                href={item.href}
+                className="group relative block aspect-[4/5] overflow-hidden bg-surface-subtle"
+              >
+                {item.image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={item.image}
+                    alt={item.label}
+                    className="h-full w-full object-cover transition duration-700 ease-out group-hover:scale-105"
+                  />
+                ) : (
+                  <div className={`h-full w-full ${PLACEHOLDER}`}>
+                    Upload a photo
+                  </div>
+                )}
+                <span
+                  aria-hidden
+                  className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent"
+                />
+                <span className="absolute inset-x-0 bottom-0 p-6 text-white">
+                  <span className="block font-display text-h3 leading-tight">
+                    {item.label}
+                  </span>
+                  {item.caption ? (
+                    <span className="mt-1 block text-eyebrow font-semibold uppercase tracking-[0.16em] text-white/85">
+                      {item.caption}
+                    </span>
+                  ) : null}
+                </span>
+              </a>
+            ))}
+          </div>
+        </div>
+      ),
+    },
+    PromoBanner: {
+      fields: {
+        eyebrow: { type: "text" },
+        heading: { type: "textarea" },
+        text: { type: "textarea" },
+        image: { type: "custom", render: ImageUploadField },
+        buttonLabel: { type: "text" },
+        buttonHref: { type: "text" },
+        align: ALIGN_FIELD,
+      },
+      defaultProps: {
+        eyebrow: "The Edit",
+        heading: "A season in one collection",
+        text: "One or two lines about the story behind it.",
+        image: "",
+        buttonLabel: "Shop the edit",
+        buttonHref: "#",
+        align: "left",
+      },
+      render: ({
+        eyebrow,
+        heading,
+        text,
+        image,
+        buttonLabel,
+        buttonHref,
+        align,
+      }) => (
+        <section className="relative isolate min-h-[26rem] overflow-hidden bg-surface-subtle">
+          {image ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={image}
+              alt=""
+              className="absolute inset-0 -z-10 h-full w-full object-cover"
+            />
+          ) : null}
+          <span
+            aria-hidden
+            className="absolute inset-0 -z-10 bg-gradient-to-r from-black/55 to-black/10"
+          />
+          <div
+            className={`${SECTION} flex min-h-[26rem] flex-col justify-center py-20 ${
+              align === "center" ? "items-center text-center" : "items-start"
+            }`}
+          >
+            {eyebrow ? (
+              <p className="text-eyebrow font-semibold uppercase tracking-[0.2em] text-white/80">
+                {eyebrow}
+              </p>
+            ) : null}
+            <h2 className="mt-3 max-w-xl font-display text-h1 leading-[1.05] text-balance text-white">
+              {heading}
+            </h2>
+            {text ? (
+              <p className="mt-4 max-w-md text-lead leading-[1.6] text-white/85">
+                {text}
+              </p>
+            ) : null}
+            {buttonLabel ? (
+              <a
+                href={buttonHref}
+                className="mt-8 inline-flex items-center bg-white px-8 py-4 text-sm font-semibold uppercase tracking-[0.14em] text-neutral-900 transition hover:bg-white/90"
+              >
+                {buttonLabel}
+              </a>
+            ) : null}
+          </div>
+        </section>
+      ),
+    },
+    NewsletterSignup: {
+      fields: {
+        heading: { type: "text" },
+        description: { type: "textarea" },
+        buttonLabel: { type: "text" },
+        successMessage: { type: "text" },
+        smallprint: { type: "text" },
+      },
+      defaultProps: {
+        heading: "Join the list",
+        description:
+          "First look at new arrivals, and the occasional note worth reading.",
+        buttonLabel: "Subscribe",
+        successMessage: "You are on the list — check your inbox.",
+        smallprint: "Unsubscribe any time.",
+      },
+      render: ({
+        heading,
+        description,
+        buttonLabel,
+        successMessage,
+        smallprint,
+      }) => (
+        <section className="bg-surface-subtle">
+          <div
+            className={`${SECTION} flex flex-col items-center py-20 text-center`}
+          >
+            <h2 className="font-display text-h2 leading-tight text-balance">
+              {heading}
+            </h2>
+            {description ? (
+              <p className="mt-3 max-w-md text-lead leading-[1.6] text-muted">
+                {description}
+              </p>
+            ) : null}
+            <div className="mt-7 w-full max-w-md">
+              <NewsletterForm
+                buttonLabel={buttonLabel}
+                successMessage={successMessage}
+              />
+            </div>
+            {smallprint ? (
+              <p className="mt-3 text-sm text-muted">{smallprint}</p>
+            ) : null}
+          </div>
+        </section>
       ),
     },
     EnquiryForm: {

@@ -6,6 +6,8 @@ import {
   DM_Sans,
   Baloo_2,
   Nunito,
+  Cormorant_Garamond,
+  Inter,
 } from "next/font/google";
 import "./globals.css";
 
@@ -51,6 +53,21 @@ const baloo = Baloo_2({
   preload: false,
 });
 
+// Serif display over a neutral grotesque — the luxury fashion pairing.
+const cormorant = Cormorant_Garamond({
+  variable: "--font-cormorant",
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  preload: false,
+});
+
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  preload: false,
+});
+
 const nunito = Nunito({
   variable: "--font-nunito",
   subsets: ["latin"],
@@ -73,6 +90,8 @@ const fontVariables = [
   dmSans.variable,
   baloo.variable,
   nunito.variable,
+  cormorant.variable,
+  inter.variable,
 ].join(" ");
 
 export default function RootLayout({

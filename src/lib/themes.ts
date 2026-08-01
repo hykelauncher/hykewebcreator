@@ -28,6 +28,8 @@ const FONT = {
   dmSans: "var(--font-dm-sans)",
   baloo: "var(--font-baloo)",
   nunito: "var(--font-nunito)",
+  cormorant: "var(--font-cormorant)",
+  inter: "var(--font-inter)",
 } as const;
 
 export const THEMES: SiteTheme[] = [
@@ -146,6 +148,36 @@ export const THEMES: SiteTheme[] = [
       "--site-band-on": "#fdfaf4",
       "--site-font-display": FONT.baloo,
       "--site-font-body": FONT.nunito,
+    },
+  },
+
+  {
+    // Ported from the ECLAT design system: near-black on white with a cream
+    // second surface and a gold accent. Square corners and almost no shadow —
+    // luxury retail leans on type and space rather than chrome.
+    id: "boutique",
+    name: "Boutique",
+    description:
+      "Black, cream and gold with serif headings. Built for fashion and product-led shops.",
+    swatch: ["#ffffff", "#f9f7f4", "#c9a86c"],
+    vars: {
+      "--site-background": "#ffffff",
+      "--site-foreground": "#0a0a0a",
+      "--site-surface": "#ffffff",
+      "--site-surface-subtle": "#f9f7f4",
+      "--site-border": "rgba(10, 10, 10, 0.12)",
+      "--site-border-strong": "rgba(10, 10, 10, 0.28)",
+      "--site-muted": "rgba(10, 10, 10, 0.58)",
+      "--site-accent": "#c9a86c",
+      "--site-band": "#0a0a0a",
+      "--site-band-on": "#f9f7f4",
+      "--site-radius-card": "0px",
+      "--site-radius-pill": "0px",
+      "--site-shadow-soft": "none",
+      "--site-shadow-raised": "none",
+      "--site-shadow-lifted": "0 24px 60px rgba(10, 10, 10, 0.1)",
+      "--site-font-display": FONT.cormorant,
+      "--site-font-body": FONT.inter,
     },
   },
 ];

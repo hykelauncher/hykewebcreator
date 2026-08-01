@@ -110,6 +110,43 @@ export const PLUGINS: PluginDefinition[] = [
     },
   },
   {
+    id: "announcement",
+    name: "Announcement bar",
+    description:
+      "A strip across the top of every page — delivery terms, a sale, opening hours.",
+    fields: [
+      {
+        name: "message",
+        label: "Message",
+        type: "text",
+        placeholder: "Free UK delivery on orders over £150",
+        required: true,
+      },
+      { name: "linkLabel", label: "Link text (optional)", type: "text" },
+      {
+        name: "linkHref",
+        label: "Link URL (optional)",
+        type: "text",
+        placeholder: "/shop",
+      },
+    ],
+    parse: (input) => {
+      const message = (input.message ?? "").trim().slice(0, 160);
+      if (!message) return null;
+      const linkHref = (input.linkHref ?? "").trim();
+      // Same-site paths or http(s) only, so the bar can't carry a
+      // javascript: URL onto every page of a site.
+      if (linkHref && !/^(https?:\/\/[^\s"'<>]+|\/[^\s"'<>]*)$/i.test(linkHref)) {
+        return null;
+      }
+      return {
+        message,
+        linkLabel: (input.linkLabel ?? "").trim().slice(0, 60),
+        linkHref: linkHref.slice(0, 300),
+      };
+    },
+  },
+  {
     id: "social",
     name: "Social links",
     description:

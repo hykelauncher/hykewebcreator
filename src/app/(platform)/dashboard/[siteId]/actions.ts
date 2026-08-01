@@ -6,7 +6,14 @@ import { revalidatePath } from "next/cache";
 import { del } from "@vercel/blob";
 import { and, asc, eq } from "drizzle-orm";
 import { getDb } from "@/db";
-import { assets, enquiries, pageVersions, pages, sites } from "@/db/schema";
+import {
+  assets,
+  enquiries,
+  pageVersions,
+  pages,
+  sites,
+  subscribers,
+} from "@/db/schema";
 import { revalidateSite } from "@/lib/publish";
 import { THEMES } from "@/lib/themes";
 import { getPlugin } from "@/lib/plugins";
@@ -537,6 +544,23 @@ export async function restorePageVersion(formData: FormData) {
     .update(pages)
     .set({ content: version.content, title: version.title, updatedAt: new Date() })
     .where(eq(pages.id, page.id));
+
+  revalidatePath(`/dashboard/${siteId}`);
+}
+
+export async function deleteSubscriber(formData: FormData) {
+  const userId = await requireAuth();
+
+  const siteId = String(formData.get("siteId") || "");
+  const subscriberId = String(formData.get("subscriberId") || "");
+  await requireOwnedSite(siteId, userId);
+
+  const db = getDb();
+  await db
+    .delete(subscribers)
+    .where(
+      and(eq(subscribers.id, subscriberId), eq(subscribers.siteId, siteId)),
+    );
 
   revalidatePath(`/dashboard/${siteId}`);
 }

@@ -94,6 +94,30 @@ export const pageVersions = pgTable("page_versions", {
 });
 
 /**
+ * Newsletter signups from a published site.
+ *
+ * Kept separate from enquiries: an enquiry is a message somebody expects a
+ * reply to, a subscriber is a standing permission to send them things. Mixing
+ * them would make both lists wrong.
+ */
+export const subscribers = pgTable(
+  "subscribers",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    siteId: uuid("site_id")
+      .notNull()
+      .references(() => sites.id, { onDelete: "cascade" }),
+    email: text("email").notNull(),
+    pageSlug: text("page_slug").notNull().default(""),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  // Signing up twice shouldn't create two records to email twice.
+  (table) => [uniqueIndex("subscribers_site_email_idx").on(table.siteId, table.email)],
+);
+
+/**
  * Enquiries submitted through a published site's form block.
  *
  * Deliberately loose about shape: a form is configurable per block, so only

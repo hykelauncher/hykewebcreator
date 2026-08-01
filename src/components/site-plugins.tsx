@@ -17,6 +17,29 @@ const SOCIAL_LABELS: Record<string, string> = {
   linkedin: "LinkedIn",
 };
 
+/**
+ * The announcement bar sits above everything, so it renders separately from
+ * the rest — those hang off the bottom of the page.
+ */
+export function SiteAnnouncement({ plugins }: { plugins: unknown }) {
+  const announcement = readPluginConfig(plugins, "announcement");
+  if (!announcement) return null;
+
+  return (
+    <div className="bg-foreground px-6 py-2.5 text-center text-sm text-background">
+      <span>{announcement.message}</span>
+      {announcement.linkLabel && announcement.linkHref ? (
+        <a
+          href={announcement.linkHref}
+          className="ml-3 font-semibold underline underline-offset-4"
+        >
+          {announcement.linkLabel}
+        </a>
+      ) : null}
+    </div>
+  );
+}
+
 export function SitePlugins({ plugins }: { plugins: unknown }) {
   const whatsapp = readPluginConfig(plugins, "whatsapp");
   const call = readPluginConfig(plugins, "call");

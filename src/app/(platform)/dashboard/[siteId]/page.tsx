@@ -1,9 +1,15 @@
 import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { getDb } from "@/db";
-import { enquiries, pageVersions, pages, sites } from "@/db/schema";
+import {
+  enquiries,
+  pageVersions,
+  pages,
+  sites,
+  subscribers,
+} from "@/db/schema";
 import { getSiteUrl } from "@/lib/tenant";
 import { verificationRecordName } from "@/lib/domain";
 import { DomainForm } from "./domain-form";
@@ -14,6 +20,7 @@ import { SiteDangerZone } from "./site-danger-zone";
 import { EnquiriesList } from "./enquiries-list";
 import { PluginsForm } from "./plugins-form";
 import { VersionHistory } from "./version-history";
+import { SubscribersList } from "./subscribers-list";
 
 export default async function SiteSettingsPage({
   params,
@@ -44,6 +51,17 @@ export default async function SiteSettingsPage({
     .limit(50);
 
   const unhandled = siteEnquiries.filter((e) => !e.handled).length;
+
+  const siteSubscribers = await db
+    .select()
+    .from(subscribers)
+    .where(eq(subscribers.siteId, siteId))
+    .orderBy(desc(subscribers.createdAt))
+    .limit(100);
+  const [{ subscriberCount }] = await db
+    .select({ subscriberCount: sql<number>`count(*)::int` })
+    .from(subscribers)
+    .where(eq(subscribers.siteId, siteId));
 
   // Newest first, capped: history is for getting back to a recent good state,
   // not an audit log.
@@ -118,6 +136,22 @@ export default async function SiteSettingsPage({
             ) : null}
           </div>
           <EnquiriesList siteId={site.id} enquiries={siteEnquiries} />
+        </div>
+
+        <div className="glass-panel border-gradient p-6">
+          <div className="mb-4 flex items-center gap-3">
+            <h2 className="text-lg font-semibold text-slate-100">Subscribers</h2>
+            {subscriberCount > 0 ? (
+              <span className="rounded-full bg-white/10 px-2.5 py-1 text-xs text-slate-300">
+                {subscriberCount}
+              </span>
+            ) : null}
+          </div>
+          <SubscribersList
+            siteId={site.id}
+            subscribers={siteSubscribers}
+            total={subscriberCount}
+          />
         </div>
 
         <div className="glass-panel border-gradient p-6">

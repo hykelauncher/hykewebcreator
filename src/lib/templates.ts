@@ -243,6 +243,68 @@ function enquiryForm(props: {
   };
 }
 
+function productGrid(
+  id: string,
+  columns: "2" | "3" | "4",
+  items: {
+    name: string;
+    price: string;
+    comparePrice?: string;
+    badge?: string;
+  }[],
+) {
+  return {
+    type: "ProductGrid" as const,
+    props: {
+      id,
+      columns,
+      items: items.map((i) => ({
+        comparePrice: "",
+        badge: "",
+        image: "",
+        href: "/shop",
+        ...i,
+      })),
+    },
+  };
+}
+
+function categoryTiles(
+  id: string,
+  items: { label: string; caption: string; href: string }[],
+) {
+  return {
+    type: "CategoryTiles" as const,
+    props: { id, items: items.map((i) => ({ image: "", ...i })) },
+  };
+}
+
+function promoBanner(props: {
+  id: string;
+  eyebrow: string;
+  heading: string;
+  text: string;
+  buttonLabel: string;
+  buttonHref: string;
+  align?: "left" | "center";
+}) {
+  return {
+    type: "PromoBanner" as const,
+    props: { image: "", align: "left" as const, ...props },
+  };
+}
+
+function newsletter(props: {
+  id: string;
+  heading: string;
+  description: string;
+  buttonLabel: string;
+  successMessage: string;
+  smallprint: string;
+}) {
+  return { type: "NewsletterSignup" as const, props: { ...props } };
+}
+
 function pricing(id: string) {
   return {
     type: "PricingTable" as const,
@@ -1388,6 +1450,228 @@ export const TEMPLATES: Template[] = [
               "Monday to Saturday, 9am — 7pm\nSunday, by arrangement",
             ),
             spacer("catcon-sp-2", "lg"),
+          ],
+        },
+      },
+    ],
+  },
+  {
+    // Ported from the ECLAT design system: near-black on white with cream and
+    // gold, serif headings over a neutral grotesque, square corners.
+    id: "boutique",
+    name: "Boutique shop",
+    description:
+      "Luxury retail: category tiles, product grids, campaign banners and a newsletter.",
+    theme: "midnight",
+    themeId: "boutique",
+    data: {
+      root: {
+        props: {
+          title: "Home",
+          metaDescription:
+            "Considered clothing, made to last. New arrivals, bestsellers and the current edit.",
+        },
+      },
+      content: [
+        nav("shop-nav"),
+        cateringHero({
+          id: "shop-hero",
+          badge: "",
+          heading: "Define your own elegance.",
+          subheading:
+            "Considered pieces, made in small runs from materials worth keeping. Replace this with the line your brand is known for.",
+          buttonLabel: "Shop new arrivals",
+          buttonHref: "/shop",
+          secondaryLabel: "The lookbook",
+          secondaryHref: "/about",
+          bullets: "",
+        }),
+        headingAt("shop-cat-heading", "Explore categories", "h2", "center"),
+        categoryTiles("shop-cats", [
+          { label: "Women", caption: "Shop now", href: "/shop" },
+          { label: "Men", caption: "Shop now", href: "/shop" },
+          { label: "Accessories", caption: "Shop now", href: "/shop" },
+        ]),
+        headingAt("shop-new-heading", "New arrivals", "h2", "center"),
+        productGrid("shop-new", "4", [
+          { name: "Oversized cashmere blazer", price: "£189", badge: "New" },
+          { name: "Midi silk slip dress", price: "£195", comparePrice: "£295", badge: "Sale" },
+          { name: "Wide-leg wool trouser", price: "£140" },
+          { name: "Ribbed knit crewneck", price: "£95" },
+        ]),
+        promoBanner({
+          id: "shop-promo",
+          eyebrow: "The edit",
+          heading: "The linen edit",
+          text: "Pieces chosen to be worn all summer and kept for the next one.",
+          buttonLabel: "Shop the edit",
+          buttonHref: "/shop",
+        }),
+        headingAt("shop-best-heading", "Bestsellers", "h2", "center"),
+        productGrid("shop-best", "4", [
+          { name: "Tailored linen shirt", price: "£110" },
+          { name: "Leather crossbody bag", price: "£240", badge: "Bestseller" },
+          { name: "Cotton poplin dress", price: "£165" },
+          { name: "Merino wool scarf", price: "£75" },
+        ]),
+        stats("shop-promises", [
+          { value: "Free", label: "Delivery over £150" },
+          { value: "30 days", label: "Easy returns" },
+          { value: "Made well", label: "Small-run production" },
+        ]),
+        testimonial({
+          id: "shop-testimonial",
+          quote:
+            "Replace this with something a real customer wrote. One specific sentence beats three vague ones.",
+          authorName: "Customer name",
+          authorRole: "Verified buyer",
+        }),
+        newsletter({
+          id: "shop-newsletter",
+          heading: "Join the list",
+          description:
+            "First look at new arrivals, and the occasional note worth reading.",
+          buttonLabel: "Subscribe",
+          successMessage: "You are on the list — check your inbox.",
+          smallprint: "Unsubscribe any time.",
+        }),
+      ],
+    },
+    pages: [
+      {
+        slug: "shop",
+        title: "Shop",
+        data: {
+          root: {
+            props: {
+              title: "Shop",
+              metaDescription: "The full collection.",
+            },
+          },
+          content: [
+            nav("shoplist-nav"),
+            spacer("shoplist-sp-0", "md"),
+            headingAt("shoplist-heading", "The collection", "h1"),
+            textAt(
+              "shoplist-intro",
+              "Everything currently available. Add a product card for each piece, and link it wherever you take orders.",
+            ),
+            productGrid("shoplist-grid", "3", [
+              { name: "Oversized cashmere blazer", price: "£189", badge: "New" },
+              { name: "Midi silk slip dress", price: "£195", comparePrice: "£295", badge: "Sale" },
+              { name: "Wide-leg wool trouser", price: "£140" },
+              { name: "Ribbed knit crewneck", price: "£95" },
+              { name: "Tailored linen shirt", price: "£110" },
+              { name: "Leather crossbody bag", price: "£240" },
+              { name: "Cotton poplin dress", price: "£165" },
+              { name: "Merino wool scarf", price: "£75" },
+              { name: "Structured wool coat", price: "£320" },
+            ]),
+            band({
+              id: "shoplist-band",
+              tone: "inverse",
+              eyebrow: "Not sure on size?",
+              heading: "Ask us before you buy",
+              text: "Tell us your usual size and what you are after, and we will point you to the right piece.",
+              buttonLabel: "Ask a question",
+              buttonHref: "/contact",
+            }),
+            spacer("shoplist-sp-1", "lg"),
+          ],
+        },
+      },
+      {
+        slug: "about",
+        title: "About",
+        data: {
+          root: {
+            props: {
+              title: "About",
+              metaDescription: "How the label started and how the clothes are made.",
+            },
+          },
+          content: [
+            nav("shopabout-nav"),
+            spacer("shopabout-sp-0", "md"),
+            headingAt("shopabout-heading", "Clothing that lasts longer than a season.", "h1"),
+            textAt(
+              "shopabout-story",
+              "The longer version: why you started, how the pieces are made, and what you will not compromise on.",
+            ),
+            image("shopabout-image", "wide", ""),
+            stats("shopabout-stats", [
+              { value: "2019", label: "Founded" },
+              { value: "12", label: "Makers we work with" },
+              { value: "100%", label: "Natural fibres" },
+            ]),
+            headingAt("shopabout-values", "What we stand for", "h2"),
+            faq("shopabout-faq", [
+              {
+                question: "Where are the pieces made?",
+                answer: "Name the workshops and countries. Specifics build trust.",
+              },
+              {
+                question: "What are they made from?",
+                answer: "List the materials plainly, including anything blended.",
+              },
+              {
+                question: "How should I care for them?",
+                answer: "Washing and storage, in one short paragraph.",
+              },
+            ]),
+            newsletter({
+              id: "shopabout-newsletter",
+              heading: "Stay in touch",
+              description: "New arrivals and restocks, occasionally.",
+              buttonLabel: "Subscribe",
+              successMessage: "You are on the list.",
+              smallprint: "Unsubscribe any time.",
+            }),
+          ],
+        },
+      },
+      {
+        slug: "contact",
+        title: "Contact",
+        data: {
+          root: {
+            props: {
+              title: "Contact",
+              metaDescription: "Questions about sizing, orders or returns.",
+            },
+          },
+          content: [
+            nav("shopcontact-nav"),
+            spacer("shopcontact-sp-0", "md"),
+            headingAt("shopcontact-heading", "Get in touch", "h1"),
+            textAt(
+              "shopcontact-text",
+              "Sizing, orders, returns — ask away. We usually reply within a working day.",
+            ),
+            enquiryForm({
+              id: "shopcontact-form",
+              heading: "Send a message",
+              description:
+                "Include your order number if you have one, and a photo if it helps.",
+              askPhone: "yes",
+              askSubject: "yes",
+              allowAttachment: "yes",
+              buttonLabel: "Send message",
+              successMessage: "Thanks — we will be in touch shortly.",
+            }),
+            spacer("shopcontact-sp-1", "md"),
+            headingAt("shopcontact-faq-heading", "Common questions", "h3"),
+            faq("shopcontact-faq", [
+              {
+                question: "How long does delivery take?",
+                answer: "Give a range, and say what happens if something is delayed.",
+              },
+              {
+                question: "Can I return something?",
+                answer: "State the window and who pays for return postage.",
+              },
+            ]),
+            spacer("shopcontact-sp-2", "lg"),
           ],
         },
       },
