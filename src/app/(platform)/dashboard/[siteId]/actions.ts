@@ -11,6 +11,8 @@ import {
   enquiries,
   pageVersions,
   pages,
+  preservedSites,
+  reports,
   sites,
   subscribers,
 } from "@/db/schema";
@@ -653,13 +655,51 @@ export async function deleteSite(formData: FormData) {
     }
   }
 
+  // If anyone has reported this site, keep a copy of what was published
+  // before it disappears. Deleting a site is a normal thing to do and stays
+  // clean for everyone else — but for a reported site, deletion would
+  // otherwise destroy the only record of what it actually said.
+  const siteReports = await db
+    .select({ id: reports.id })
+    .from(reports)
+    .where(eq(reports.siteId, site.id));
+
+  if (siteReports.length > 0) {
+    const published = await db
+      .select({
+        slug: pages.slug,
+        title: pages.title,
+        publishedContent: pages.publishedContent,
+        publishedAt: pages.publishedAt,
+      })
+      .from(pages)
+      .where(eq(pages.siteId, site.id));
+
+    await db.insert(preservedSites).values({
+      subdomain: site.subdomain,
+      name: site.name,
+      ownerId: site.ownerId,
+      customDomain: site.customDomain,
+      reportCount: siteReports.length,
+      snapshot: {
+        themeId: site.themeId,
+        plugins: site.plugins,
+        createdAt: site.createdAt,
+        pages: published,
+      },
+    });
+  }
+
   // Recorded before the row goes: the site id is a foreign key, and the point
   // of the entry is that this site existed and who removed it.
   await recordAudit({
     userId,
     siteId: null,
     action: "site.delete",
-    detail: `${site.subdomain} (${site.name})`,
+    detail:
+      siteReports.length > 0
+        ? `${site.subdomain} (${site.name}) — ${siteReports.length} report(s), evidence preserved`
+        : `${site.subdomain} (${site.name})`,
   });
 
   // pages and assets are ON DELETE CASCADE from sites.

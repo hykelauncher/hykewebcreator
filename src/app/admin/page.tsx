@@ -2,12 +2,21 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { desc, eq, isNotNull, sql } from "drizzle-orm";
 import { getDb } from "@/db";
-import { auditLog, enquiries, pages, reports, sites, subscribers } from "@/db/schema";
+import {
+  auditLog,
+  enquiries,
+  pages,
+  preservedSites,
+  reports,
+  sites,
+  subscribers,
+} from "@/db/schema";
 import { isAdmin } from "@/lib/admin";
 import { getSiteUrl } from "@/lib/tenant";
 import { getTheme } from "@/lib/themes";
 import { AdminSiteActions } from "./site-actions";
 import { OwnerLookup } from "./owner-lookup";
+import { EvidenceExport } from "./evidence-export";
 
 /**
  * Platform admin.
@@ -52,6 +61,10 @@ export default async function AdminPage() {
     .select({ subscriberCount: sql<number>`count(*)::int` })
     .from(subscribers);
 
+  // LEFT join, and identity read from the report itself. An inner join would
+  // drop every report whose site has been deleted — which is precisely the
+  // report you most need to see, and would quietly undo the reason reports
+  // outlive their sites at all.
   const openReports = await db
     .select({
       id: reports.id,
@@ -59,15 +72,21 @@ export default async function AdminPage() {
       reason: reports.reason,
       detail: reports.detail,
       createdAt: reports.createdAt,
-      subdomain: sites.subdomain,
-      siteName: sites.name,
-      ownerId: sites.ownerId,
+      subdomain: sql<string>`coalesce(${sites.subdomain}, ${reports.siteSubdomain}, 'unknown')`,
+      siteName: sql<string>`coalesce(${sites.name}, ${reports.siteName}, 'Deleted site')`,
+      ownerId: sql<string>`coalesce(${sites.ownerId}, ${reports.siteOwnerId}, '')`,
     })
     .from(reports)
-    .innerJoin(sites, eq(sites.id, reports.siteId))
+    .leftJoin(sites, eq(sites.id, reports.siteId))
     .where(eq(reports.status, "open"))
     .orderBy(desc(reports.createdAt))
     .limit(25);
+
+  const preserved = await db
+    .select()
+    .from(preservedSites)
+    .orderBy(desc(preservedSites.deletedAt))
+    .limit(20);
 
   const recentAudit = await db
     .select()
@@ -170,8 +189,21 @@ export default async function AdminPage() {
                     {new Date(r.createdAt).toLocaleString()} · owner{" "}
                     <code>{r.ownerId.slice(0, 16)}…</code>
                   </p>
-                  <div className="mt-2">
+                  <div className="mt-2 flex flex-wrap items-start gap-2">
                     <OwnerLookup userId={r.ownerId} />
+                    {/* A report outlives its site, so there may be nothing
+                        live left to export — what was published is in
+                        "Deleted, but preserved" below. */}
+                    {r.siteId ? (
+                      <EvidenceExport
+                        siteId={r.siteId}
+                        subdomain={r.subdomain}
+                      />
+                    ) : (
+                      <span className="text-xs text-amber-300">
+                        Site deleted — see preserved evidence
+                      </span>
+                    )}
                   </div>
                 </li>
               ))}
@@ -263,11 +295,17 @@ export default async function AdminPage() {
                       <td className="px-4 py-3 text-slate-400">
                         {new Date(site.createdAt).toLocaleDateString()}
                       </td>
-                      <td className="px-6 py-3">
+                      <td className="px-6 py-3 align-top">
                         <AdminSiteActions
                           siteId={site.id}
                           published={site.published}
                         />
+                        <div className="mt-2">
+                          <EvidenceExport
+                            siteId={site.id}
+                            subdomain={site.subdomain}
+                          />
+                        </div>
                       </td>
                     </tr>
                   );
@@ -276,6 +314,36 @@ export default async function AdminPage() {
             </table>
           </div>
         </div>
+
+        {preserved.length > 0 ? (
+          <div className="glass-panel border-gradient p-6">
+            <h2 className="mb-1 text-lg font-semibold text-slate-100">
+              Deleted, but preserved
+            </h2>
+            <p className="mb-4 text-sm text-slate-400">
+              These sites were reported and then deleted by their owner. What
+              they published was kept.
+            </p>
+            <ul className="flex flex-col gap-2">
+              {preserved.map((p) => (
+                <li
+                  key={p.id}
+                  className="rounded-lg border border-white/10 bg-white/[0.02] px-4 py-3 text-sm"
+                >
+                  <p className="font-medium text-slate-100">
+                    {p.name}{" "}
+                    <span className="text-slate-400">({p.subdomain})</span>
+                  </p>
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    deleted {new Date(p.deletedAt).toLocaleString()} ·{" "}
+                    {p.reportCount} report(s) · owner{" "}
+                    <code>{p.ownerId.slice(0, 16)}…</code>
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
 
         <div className="glass-panel border-gradient p-6">
           <h2 className="mb-1 text-lg font-semibold text-slate-100">

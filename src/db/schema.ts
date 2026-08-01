@@ -128,15 +128,42 @@ export const auditLog = pgTable("audit_log", {
  */
 export const reports = pgTable("reports", {
   id: uuid("id").primaryKey().defaultRandom(),
-  siteId: uuid("site_id")
-    .notNull()
-    .references(() => sites.id, { onDelete: "cascade" }),
+  // Nullable and ON DELETE SET NULL on purpose. A report must outlive the site
+  // it concerns: deleting the evidence against you should not be a feature,
+  // and it is the first thing someone running a scam would try.
+  siteId: uuid("site_id").references(() => sites.id, { onDelete: "set null" }),
+  // Copied at the time of the report so it still means something once the
+  // site row is gone.
+  siteSubdomain: text("site_subdomain"),
+  siteName: text("site_name"),
+  siteOwnerId: text("site_owner_id"),
   reason: text("reason").notNull(),
   detail: text("detail"),
   reporterEmail: text("reporter_email"),
   ip: text("ip"),
   status: text("status").notNull().default("open"),
   createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+/**
+ * What a reported site looked like, kept after the site itself is deleted.
+ *
+ * Without this, deleting a site destroys the published pages along with it, so
+ * a report would survive with nothing to show for it. Only written for sites
+ * that were actually reported — everyone else deletes cleanly, as they should.
+ */
+export const preservedSites = pgTable("preserved_sites", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  subdomain: text("subdomain").notNull(),
+  name: text("name").notNull(),
+  ownerId: text("owner_id").notNull(),
+  customDomain: text("custom_domain"),
+  reportCount: integer("report_count").notNull().default(0),
+  /** Published pages as they stood: slug, title and content. */
+  snapshot: jsonb("snapshot").notNull(),
+  deletedAt: timestamp("deleted_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
 });

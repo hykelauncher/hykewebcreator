@@ -23,7 +23,8 @@ export type AuditAction =
   | "domain.claim"
   | "domain.verify"
   | "admin.unpublish"
-  | "admin.restore";
+  | "admin.restore"
+  | "admin.export";
 
 export async function recordAudit(entry: {
   userId?: string | null;

@@ -82,6 +82,11 @@ export async function POST(request: Request) {
 
   await db.insert(reports).values({
     siteId: site.id,
+    // Copied now so the report still identifies something if the site is
+    // later deleted.
+    siteSubdomain: site.subdomain,
+    siteName: site.name,
+    siteOwnerId: site.ownerId,
     reason,
     detail: String(form.get("detail") ?? "").trim().slice(0, 2000) || null,
     reporterEmail: email && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) ? email : null,

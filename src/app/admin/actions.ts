@@ -2,9 +2,16 @@
 
 import { clerkClient } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { getDb } from "@/db";
-import { pages, sites } from "@/db/schema";
+import {
+  auditLog,
+  enquiries,
+  pageVersions,
+  pages,
+  reports,
+  sites,
+} from "@/db/schema";
 import { requireAdmin } from "@/lib/admin";
 import { revalidateSite } from "@/lib/publish";
 import { recordAudit } from "@/lib/audit";
@@ -95,6 +102,137 @@ export async function lookupOwner(userId: string): Promise<OwnerLookupResult> {
       error: "Couldn't reach Clerk for that account.",
     };
   }
+}
+
+/**
+ * Assembles everything held about a site into one file.
+ *
+ * Written for the moment you have to hand something over — to a bank, a
+ * regulator or the police — so it is a single self-contained JSON document
+ * rather than a screen you would have to screenshot. Assembling this under
+ * pressure, after a site has been deleted, is exactly when it goes wrong.
+ *
+ * Read-only, and recorded in the audit trail: exporting someone's personal
+ * data is itself a consequential act.
+ */
+export async function exportEvidence(
+  siteId: string,
+): Promise<{ ok: true; filename: string; json: string } | { ok: false; error: string }> {
+  const adminId = await requireAdmin();
+
+  const db = getDb();
+  const site = await db.query.sites.findFirst({ where: eq(sites.id, siteId) });
+  if (!site) return { ok: false, error: "Site not found." };
+
+  const [sitePages, siteReports, entries, siteEnquiries] = await Promise.all([
+    db.select().from(pages).where(eq(pages.siteId, site.id)),
+    db.select().from(reports).where(eq(reports.siteId, site.id)),
+    db.select().from(auditLog).where(eq(auditLog.siteId, site.id)),
+    db.select().from(enquiries).where(eq(enquiries.siteId, site.id)),
+  ]);
+
+  const versions = sitePages.length
+    ? await db
+        .select()
+        .from(pageVersions)
+        .where(
+          inArray(
+            pageVersions.pageId,
+            sitePages.map((p) => p.id),
+          ),
+        )
+    : [];
+
+  // Fetched live rather than stored, same as the owner lookup.
+  let owner: unknown = { id: site.ownerId, note: "Clerk lookup unavailable" };
+  try {
+    const clerk = await clerkClient();
+    const user = await clerk.users.getUser(site.ownerId);
+    const sessions = await clerk.sessions.getSessionList({
+      userId: site.ownerId,
+      limit: 10,
+    });
+    owner = {
+      id: user.id,
+      email:
+        user.primaryEmailAddress?.emailAddress ??
+        user.emailAddresses[0]?.emailAddress ??
+        null,
+      createdAt: user.createdAt,
+      lastActiveAt: user.lastActiveAt,
+      sessions: sessions.data.map((s) => ({
+        status: s.status,
+        createdAt: s.createdAt,
+        lastActiveAt: s.lastActiveAt,
+        ip: s.latestActivity?.ipAddress ?? null,
+        city: s.latestActivity?.city ?? null,
+        country: s.latestActivity?.country ?? null,
+        browser: s.latestActivity?.browserName ?? null,
+        device: s.latestActivity?.deviceType ?? null,
+      })),
+    };
+  } catch {
+    // A deleted Clerk account shouldn't produce an empty export.
+  }
+
+  const bundle = {
+    exportedAt: new Date().toISOString(),
+    exportedBy: adminId,
+    platform: "Hyke",
+    site: {
+      id: site.id,
+      name: site.name,
+      subdomain: site.subdomain,
+      customDomain: site.customDomain,
+      customDomainVerified: site.customDomainVerified,
+      published: site.published,
+      themeId: site.themeId,
+      template: site.template,
+      plugins: site.plugins,
+      createdAt: site.createdAt,
+      updatedAt: site.updatedAt,
+    },
+    owner,
+    reports: siteReports,
+    auditTrail: entries,
+    // Every published version, so what the site said at a given moment can be
+    // shown rather than described.
+    pages: sitePages.map((p) => ({
+      slug: p.slug,
+      title: p.title,
+      publishedAt: p.publishedAt,
+      publishedContent: p.publishedContent,
+      versions: versions
+        .filter((v) => v.pageId === p.id)
+        .map((v) => ({
+          createdAt: v.createdAt,
+          title: v.title,
+          content: v.content,
+        })),
+    })),
+    // Counts only: the people who contacted this site are not the subject of
+    // the investigation, and exporting their messages by default would be
+    // handing over third parties' data without cause.
+    enquiries: {
+      count: siteEnquiries.length,
+      firstAt: siteEnquiries[0]?.createdAt ?? null,
+      note: "Message contents withheld. Available on lawful request.",
+    },
+  };
+
+  await recordAudit({
+    userId: adminId,
+    siteId: site.id,
+    action: "admin.export",
+    detail: `${site.subdomain} — evidence bundle`,
+  });
+
+  const stamp = new Date().toISOString().slice(0, 10);
+  return {
+    ok: true,
+    filename: `hyke-evidence-${site.subdomain}-${stamp}.json`,
+    json: JSON.stringify(bundle, null, 2),
+  };
 }
 
 async function siteSlugs(siteId: string) {
