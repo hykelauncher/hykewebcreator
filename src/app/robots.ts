@@ -20,7 +20,14 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
       rules: {
         userAgent: "*",
         allow: "/",
-        disallow: ["/dashboard", "/editor", "/sign-in", "/sign-up", "/api"],
+        disallow: [
+          "/dashboard",
+          "/editor",
+          "/admin",
+          "/sign-in",
+          "/sign-up",
+          "/api",
+        ],
       },
     };
   }

@@ -1,0 +1,208 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { desc, eq, isNotNull, sql } from "drizzle-orm";
+import { getDb } from "@/db";
+import { enquiries, pages, sites, subscribers } from "@/db/schema";
+import { isAdmin } from "@/lib/admin";
+import { getSiteUrl } from "@/lib/tenant";
+import { getTheme } from "@/lib/themes";
+import { AdminSiteActions } from "./site-actions";
+
+/**
+ * Platform admin.
+ *
+ * Read-mostly on purpose: it answers "what is on my platform and is any of it
+ * a problem", and the only write is taking a site offline — which is
+ * reversible. Deleting someone's work from here would be a bigger hammer than
+ * moderation needs.
+ */
+export const dynamic = "force-dynamic";
+
+export default async function AdminPage() {
+  // 404 rather than a 403: a page that says "forbidden" confirms it exists.
+  if (!(await isAdmin())) notFound();
+
+  const db = getDb();
+
+  const allSites = await db
+    .select()
+    .from(sites)
+    .orderBy(desc(sites.createdAt))
+    .limit(200);
+
+  const [{ siteCount }] = await db
+    .select({ siteCount: sql<number>`count(*)::int` })
+    .from(sites);
+  const [{ publishedCount }] = await db
+    .select({ publishedCount: sql<number>`count(*)::int` })
+    .from(sites)
+    .where(eq(sites.published, true));
+  const [{ ownerCount }] = await db
+    .select({ ownerCount: sql<number>`count(distinct ${sites.ownerId})::int` })
+    .from(sites);
+  const [{ livePages }] = await db
+    .select({ livePages: sql<number>`count(*)::int` })
+    .from(pages)
+    .where(isNotNull(pages.publishedContent));
+  const [{ enquiryCount }] = await db
+    .select({ enquiryCount: sql<number>`count(*)::int` })
+    .from(enquiries);
+  const [{ subscriberCount }] = await db
+    .select({ subscriberCount: sql<number>`count(*)::int` })
+    .from(subscribers);
+
+  const perSite = await db
+    .select({
+      siteId: enquiries.siteId,
+      total: sql<number>`count(*)::int`,
+    })
+    .from(enquiries)
+    .groupBy(enquiries.siteId);
+
+  const stats = [
+    { label: "Sites", value: siteCount },
+    { label: "Published", value: publishedCount },
+    { label: "Owners", value: ownerCount },
+    { label: "Live pages", value: livePages },
+    { label: "Enquiries", value: enquiryCount },
+    { label: "Subscribers", value: subscriberCount },
+  ];
+
+  return (
+    <main className="min-h-screen bg-[#050914] bg-[radial-gradient(circle_at_15%_0%,rgba(96,165,250,0.1),transparent_45%)]">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-6 py-12">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-slate-100">
+              Platform admin
+            </h1>
+            <p className="mt-2 text-slate-400">
+              Everything on Hyke. Only people listed in{" "}
+              <code className="rounded bg-white/10 px-1.5 py-0.5 text-xs text-slate-300">
+                ADMIN_USER_IDS
+              </code>{" "}
+              can see this.
+            </p>
+          </div>
+          <Link
+            href="/dashboard"
+            className="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm font-medium text-slate-200 transition hover:bg-white/10"
+          >
+            ← My dashboard
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          {stats.map((s) => (
+            <div
+              key={s.label}
+              className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3.5"
+            >
+              <p className="text-2xl font-bold tracking-tight text-slate-100">
+                {s.value}
+              </p>
+              <p className="mt-0.5 text-xs font-medium uppercase tracking-[0.14em] text-slate-500">
+                {s.label}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        <div className="glass-panel border-gradient overflow-hidden">
+          <div className="flex items-center justify-between px-6 py-4">
+            <h2 className="text-lg font-semibold text-slate-100">All sites</h2>
+            <span className="text-sm text-slate-500">
+              {allSites.length} shown{siteCount > allSites.length ? ` of ${siteCount}` : ""}
+            </span>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[52rem] text-left text-sm">
+              <thead className="border-y border-white/10 text-xs uppercase tracking-[0.12em] text-slate-500">
+                <tr>
+                  <th className="px-6 py-3 font-medium">Site</th>
+                  <th className="px-4 py-3 font-medium">Owner</th>
+                  <th className="px-4 py-3 font-medium">Theme</th>
+                  <th className="px-4 py-3 font-medium">Enquiries</th>
+                  <th className="px-4 py-3 font-medium">Created</th>
+                  <th className="px-6 py-3 font-medium">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {allSites.map((site) => {
+                  const theme = getTheme(site.themeId);
+                  const total =
+                    perSite.find((p) => p.siteId === site.id)?.total ?? 0;
+                  return (
+                    <tr
+                      key={site.id}
+                      className="border-b border-white/5 last:border-b-0"
+                    >
+                      <td className="px-6 py-3">
+                        <p className="font-medium text-slate-100">
+                          {site.name}
+                        </p>
+                        <a
+                          href={getSiteUrl(site)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-xs text-slate-400 underline decoration-slate-700 underline-offset-4 hover:text-slate-200"
+                        >
+                          {site.subdomain}
+                        </a>
+                        {site.customDomain ? (
+                          <span
+                            className={`ml-2 text-xs ${
+                              site.customDomainVerified
+                                ? "text-emerald-400"
+                                : "text-amber-400"
+                            }`}
+                          >
+                            {site.customDomain}
+                            {site.customDomainVerified ? " ✓" : " (unverified)"}
+                          </span>
+                        ) : null}
+                      </td>
+                      <td className="px-4 py-3">
+                        <code className="text-xs text-slate-400">
+                          {site.ownerId.slice(0, 16)}…
+                        </code>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="inline-flex items-center gap-2 text-slate-300">
+                          <span
+                            aria-hidden
+                            className="flex h-4 w-4 overflow-hidden rounded border border-white/15"
+                          >
+                            {theme.swatch.map((c) => (
+                              <span
+                                key={c}
+                                className="h-full w-1/3"
+                                style={{ backgroundColor: c }}
+                              />
+                            ))}
+                          </span>
+                          {theme.name}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-slate-300">{total}</td>
+                      <td className="px-4 py-3 text-slate-400">
+                        {new Date(site.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-3">
+                        <AdminSiteActions
+                          siteId={site.id}
+                          published={site.published}
+                        />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+}

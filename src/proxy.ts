@@ -3,7 +3,13 @@ import { NextResponse } from "next/server";
 import type { NextFetchEvent, NextRequest } from "next/server";
 import { resolveTenantHost } from "@/lib/tenant";
 
-const isProtectedRoute = createRouteMatcher(["/dashboard(.*)", "/editor(.*)"]);
+// /admin gates on membership of ADMIN_USER_IDS in the page itself; this only
+// ensures nobody reaches it while signed out.
+const isProtectedRoute = createRouteMatcher([
+  "/dashboard(.*)",
+  "/editor(.*)",
+  "/admin(.*)",
+]);
 
 const withClerk = clerkMiddleware(async (auth, req) => {
   if (isProtectedRoute(req)) {
