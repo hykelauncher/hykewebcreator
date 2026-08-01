@@ -43,4 +43,8 @@ next-env.d.ts
 # claude code / agent skills tooling
 .claude/
 .agents/
+agent/
 skills-lock.json
+
+# graphify knowledge graph output (regenerable)
+graphify-out/

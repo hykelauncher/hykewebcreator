@@ -12,6 +12,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Installed Claude Code skills — local tooling and vendored demo assets
+    // (including minified three.js), not app code.
+    ".agents/**",
+    "agent/**",
+    "graphify-out/**",
   ]),
 ]);
 
