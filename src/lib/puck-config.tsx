@@ -370,6 +370,10 @@ export const puckConfig: Config<{ components: Components }> = {
             | { title: string; slug: string }[]
             | undefined) ?? [];
         const currentSlug = puck?.metadata?.currentSlug as string | undefined;
+        // Template previews live under /templates/<id>, so they pass a prefix
+        // to keep nav links inside the preview instead of jumping to a path
+        // that only exists on a published site.
+        const navPrefix = puck?.metadata?.navPrefix as string | undefined;
         return (
           <nav className="sticky top-0 z-50 border-b border-line bg-background/80 backdrop-blur-md">
             <div className={`${SECTION} flex flex-wrap items-center gap-1 py-3.5`}>
@@ -378,7 +382,13 @@ export const puckConfig: Config<{ components: Components }> = {
                 return (
                   <a
                     key={page.slug}
-                    href={page.slug ? `/${page.slug}` : "/"}
+                    href={
+                      navPrefix
+                        ? `${navPrefix}${page.slug}`
+                        : page.slug
+                          ? `/${page.slug}`
+                          : "/"
+                    }
                     aria-current={active ? "page" : undefined}
                     className={`rounded-pill px-3.5 py-2 text-sm font-medium transition duration-200 ${
                       active

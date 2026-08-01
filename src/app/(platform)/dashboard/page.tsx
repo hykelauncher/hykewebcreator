@@ -8,7 +8,13 @@ import { GRADIENTS } from "@/lib/gradients";
 import { getTemplate } from "@/lib/templates";
 import { CreateSiteForm } from "./create-site-form";
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ template?: string }>;
+}) {
+  // Carries the choice through from a template preview's "Use this template".
+  const { template: preselectedTemplate } = await searchParams;
   const { userId } = await auth();
   const db = getDb();
   const mySites = userId
@@ -83,7 +89,7 @@ export default async function DashboardPage() {
           )}
         </div>
 
-        <CreateSiteForm />
+        <CreateSiteForm initialTemplateId={preselectedTemplate} />
       </div>
     </main>
   );

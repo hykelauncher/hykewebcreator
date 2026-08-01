@@ -29,9 +29,19 @@ async function submit(_prevState: State, formData: FormData): Promise<State> {
   }
 }
 
-export function CreateSiteForm() {
+export function CreateSiteForm({
+  initialTemplateId,
+}: {
+  /** Preselects the template someone arrived with from a preview. */
+  initialTemplateId?: string;
+}) {
   const [state, formAction, pending] = useActionState(submit, {});
-  const [templateId, setTemplateId] = useState(TEMPLATES[1].id);
+  const [templateId, setTemplateId] = useState(
+    TEMPLATES.some((t) => t.id === initialTemplateId)
+      ? (initialTemplateId as string)
+      : TEMPLATES[1].id,
+  );
+  const selected = TEMPLATES.find((t) => t.id === templateId);
 
   return (
     <form
@@ -43,7 +53,8 @@ export function CreateSiteForm() {
           Create a new site
         </h2>
         <p className="text-sm text-slate-400">
-          Pick a starting point — you can customize everything after.
+          Pick a starting point — open a preview to see the whole thing before
+          you commit. You can customize everything after.
         </p>
       </div>
 
@@ -77,6 +88,24 @@ export function CreateSiteForm() {
           </button>
         ))}
       </div>
+
+      {selected && selected.id !== "blank" ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
+          <p className="text-sm text-slate-300">
+            See <span className="font-medium text-slate-100">{selected.name}</span>{" "}
+            in full before you choose it.
+          </p>
+          {/* Opens in a new tab so a half-filled form isn't lost. */}
+          <a
+            href={`/templates/${selected.id}`}
+            target="_blank"
+            rel="noreferrer"
+            className="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm font-medium text-slate-100 transition hover:bg-white/10"
+          >
+            Preview template ↗
+          </a>
+        </div>
+      ) : null}
 
       <div className="flex flex-col gap-3 sm:flex-row">
         <input
