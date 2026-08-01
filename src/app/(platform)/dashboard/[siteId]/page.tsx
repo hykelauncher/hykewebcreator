@@ -1,9 +1,9 @@
 import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { getDb } from "@/db";
-import { enquiries, pages, sites } from "@/db/schema";
+import { enquiries, pageVersions, pages, sites } from "@/db/schema";
 import { getSiteUrl } from "@/lib/tenant";
 import { verificationRecordName } from "@/lib/domain";
 import { DomainForm } from "./domain-form";
@@ -13,6 +13,7 @@ import { ThemeForm } from "./theme-form";
 import { SiteDangerZone } from "./site-danger-zone";
 import { EnquiriesList } from "./enquiries-list";
 import { PluginsForm } from "./plugins-form";
+import { VersionHistory } from "./version-history";
 
 export default async function SiteSettingsPage({
   params,
@@ -43,6 +44,30 @@ export default async function SiteSettingsPage({
     .limit(50);
 
   const unhandled = siteEnquiries.filter((e) => !e.handled).length;
+
+  // Newest first, capped: history is for getting back to a recent good state,
+  // not an audit log.
+  const pageIds = sitePages.map((p) => p.id);
+  const versions = pageIds.length
+    ? await db
+        .select({
+          id: pageVersions.id,
+          pageId: pageVersions.pageId,
+          title: pageVersions.title,
+          createdAt: pageVersions.createdAt,
+        })
+        .from(pageVersions)
+        .where(inArray(pageVersions.pageId, pageIds))
+        .orderBy(desc(pageVersions.createdAt))
+        .limit(100)
+    : [];
+
+  const pagesWithVersions = sitePages.map((page) => ({
+    id: page.id,
+    title: page.title,
+    slug: page.slug,
+    versions: versions.filter((v) => v.pageId === page.id).slice(0, 10),
+  }));
 
   return (
     <main className="min-h-screen flex-1 bg-[#020617] bg-[radial-gradient(circle_at_15%_0%,rgba(96,165,250,0.14),transparent_45%),radial-gradient(circle_at_85%_20%,rgba(168,85,247,0.12),transparent_40%)]">
@@ -93,6 +118,13 @@ export default async function SiteSettingsPage({
             ) : null}
           </div>
           <EnquiriesList siteId={site.id} enquiries={siteEnquiries} />
+        </div>
+
+        <div className="glass-panel border-gradient p-6">
+          <h2 className="mb-4 text-lg font-semibold text-slate-100">
+            Version history
+          </h2>
+          <VersionHistory siteId={site.id} pages={pagesWithVersions} />
         </div>
 
         <div className="glass-panel border-gradient p-6">

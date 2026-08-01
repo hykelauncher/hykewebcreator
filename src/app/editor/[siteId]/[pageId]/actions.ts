@@ -4,7 +4,7 @@ import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 import { getDb } from "@/db";
-import { pages, sites } from "@/db/schema";
+import { pageVersions, pages, sites } from "@/db/schema";
 import { extractPageMeta, parsePuckData } from "@/lib/puck-data";
 import { revalidateSite } from "@/lib/publish";
 
@@ -50,6 +50,13 @@ export async function publishPage(
       updatedAt: publishedAt,
     })
     .where(eq(pages.id, pageId));
+
+  // Snapshot what was just published, so this state can be restored later.
+  await db.insert(pageVersions).values({
+    pageId: page.id,
+    content: parsed.data,
+    title: title ?? page.title,
+  });
 
   if (!site.published) {
     await db

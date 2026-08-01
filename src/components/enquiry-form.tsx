@@ -10,16 +10,21 @@ export type EnquiryField = "name" | "email" | "phone" | "subject";
  * Posts to /api/enquiries, which resolves the site from the request Host — the
  * form carries no site id, so it can't be pointed at another tenant.
  */
+/** Mirrors the server's limit; the check here only saves a wasted upload. */
+const MAX_ATTACHMENT_MB = 5;
+
 export function EnquiryForm({
   fields,
   buttonLabel,
   successMessage,
   pageSlug,
+  allowAttachment,
 }: {
   fields: EnquiryField[];
   buttonLabel: string;
   successMessage: string;
   pageSlug: string;
+  allowAttachment: boolean;
 }) {
   const [state, setState] = useState<"idle" | "sending" | "sent">("idle");
   const [error, setError] = useState<string | null>(null);
@@ -29,6 +34,14 @@ export function EnquiryForm({
     const form = event.currentTarget;
     setState("sending");
     setError(null);
+
+    const file = (form.elements.namedItem("attachment") as HTMLInputElement | null)
+      ?.files?.[0];
+    if (file && file.size > MAX_ATTACHMENT_MB * 1024 * 1024) {
+      setError(`That file is over the ${MAX_ATTACHMENT_MB}MB limit.`);
+      setState("idle");
+      return;
+    }
 
     try {
       const response = await fetch("/api/enquiries", {
@@ -163,6 +176,24 @@ export function EnquiryForm({
           className={`${control} resize-y`}
         />
       </div>
+
+      {allowAttachment ? (
+        <div>
+          <label className={label} htmlFor="enq-attachment">
+            Attach a file <span className="font-normal opacity-70">(optional)</span>
+          </label>
+          <input
+            id="enq-attachment"
+            name="attachment"
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/heic,application/pdf"
+            className="block w-full text-sm file:mr-4 file:rounded-pill file:border-0 file:bg-foreground file:px-4 file:py-2 file:text-sm file:font-medium file:text-background"
+          />
+          <p className="mt-1.5 text-sm text-muted">
+            JPG, PNG, WEBP, HEIC or PDF, up to {MAX_ATTACHMENT_MB}MB.
+          </p>
+        </div>
+      ) : null}
 
       {error ? (
         <p role="alert" className="text-sm font-medium text-red-600">

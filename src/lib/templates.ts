@@ -226,6 +226,7 @@ function enquiryForm(props: {
   description: string;
   askPhone?: "yes" | "no";
   askSubject?: "yes" | "no";
+  allowAttachment?: "yes" | "no";
   buttonLabel: string;
   successMessage: string;
 }) {
@@ -236,6 +237,7 @@ function enquiryForm(props: {
       askEmail: "yes" as const,
       askPhone: "no" as const,
       askSubject: "no" as const,
+      allowAttachment: "no" as const,
       ...props,
     },
   };
@@ -1335,6 +1337,7 @@ export const TEMPLATES: Template[] = [
                 "Date, headcount, venue and anything you already know about the menu — we'll come back with a package and a price.",
               askPhone: "yes",
               askSubject: "yes",
+              allowAttachment: "yes",
               buttonLabel: "Request a quote",
               successMessage:
                 "Thanks — we've got your request and will be in touch shortly.",

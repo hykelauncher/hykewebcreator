@@ -75,6 +75,25 @@ export const pages = pgTable(
 );
 
 /**
+ * A snapshot of a page's content, written each time it's published.
+ *
+ * Publishing is the moment worth being able to go back to — it's when someone
+ * decided the page was good enough for visitors. Autosaved drafts are far too
+ * frequent to keep, and would bury the useful snapshots.
+ */
+export const pageVersions = pgTable("page_versions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  pageId: uuid("page_id")
+    .notNull()
+    .references(() => pages.id, { onDelete: "cascade" }),
+  content: jsonb("content").notNull(),
+  title: text("title").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+/**
  * Enquiries submitted through a published site's form block.
  *
  * Deliberately loose about shape: a form is configurable per block, so only
@@ -91,6 +110,8 @@ export const enquiries = pgTable("enquiries", {
   phone: text("phone"),
   subject: text("subject"),
   message: text("message").notNull(),
+  attachmentUrl: text("attachment_url"),
+  attachmentName: text("attachment_name"),
   pageSlug: text("page_slug").notNull().default(""),
   handled: boolean("handled").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true })
@@ -122,8 +143,13 @@ export const enquiriesRelations = relations(enquiries, ({ one }) => ({
   site: one(sites, { fields: [enquiries.siteId], references: [sites.id] }),
 }));
 
-export const pagesRelations = relations(pages, ({ one }) => ({
+export const pagesRelations = relations(pages, ({ one, many }) => ({
   site: one(sites, { fields: [pages.siteId], references: [sites.id] }),
+  versions: many(pageVersions),
+}));
+
+export const pageVersionsRelations = relations(pageVersions, ({ one }) => ({
+  page: one(pages, { fields: [pageVersions.pageId], references: [pages.id] }),
 }));
 
 export const assetsRelations = relations(assets, ({ one }) => ({

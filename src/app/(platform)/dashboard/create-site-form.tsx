@@ -3,7 +3,6 @@
 import { useActionState, useState } from "react";
 import { createSite } from "./actions";
 import { TEMPLATES } from "@/lib/templates";
-import { GRADIENTS } from "@/lib/gradients";
 import {
   SUBDOMAIN_MAX_LENGTH,
   SUBDOMAIN_MIN_LENGTH,
@@ -71,14 +70,43 @@ export function CreateSiteForm({
                 : "border-white/10 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.06]"
             }`}
           >
+            {/* A live scaled render rather than a screenshot, so a thumbnail
+                can never go stale when a template changes. Lazy so a
+                dashboard visit doesn't fetch every one up front. */}
             <div
-              className="h-16 w-full"
-              style={{
-                backgroundImage:
-                  t.id === "blank" ? undefined : GRADIENTS[t.theme],
-                backgroundColor: t.id === "blank" ? "#1e293b" : undefined,
-              }}
-            />
+              className="relative h-28 w-full overflow-hidden bg-white"
+              // Container query unit lets the scale track the card's real
+              // width, so the whole layout fits at any breakpoint instead of
+              // being cropped by a hardcoded factor.
+              style={{ containerType: "inline-size" }}
+            >
+              {t.id === "blank" ? (
+                <div className="flex h-full w-full items-center justify-center bg-slate-800 text-xs text-slate-400">
+                  Empty page
+                </div>
+              ) : (
+                <>
+                  <iframe
+                    src={`/templates/${t.id}/thumb`}
+                    title={`${t.name} preview`}
+                    loading="lazy"
+                    tabIndex={-1}
+                    aria-hidden
+                    scrolling="no"
+                    className="pointer-events-none absolute left-0 top-0 origin-top-left border-0"
+                    style={{
+                      width: "1280px",
+                      height: "1000px",
+                      transform: "scale(calc(100cqw / 1280px))",
+                    }}
+                  />
+                  <span
+                    aria-hidden
+                    className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"
+                  />
+                </>
+              )}
+            </div>
             <div className="px-3 py-2">
               <p className="text-sm font-medium text-slate-100">{t.name}</p>
               <p className="text-xs text-slate-400 line-clamp-2">

@@ -131,6 +131,7 @@ type Components = {
     askEmail: "yes" | "no";
     askPhone: "yes" | "no";
     askSubject: "yes" | "no";
+    allowAttachment: "yes" | "no";
     buttonLabel: string;
     successMessage: string;
   };
@@ -599,6 +600,14 @@ export const puckConfig: Config<{ components: Components }> = {
             { label: "No", value: "no" },
           ],
         },
+        allowAttachment: {
+          type: "radio",
+          label: "Allow a file attachment",
+          options: [
+            { label: "No", value: "no" },
+            { label: "Yes", value: "yes" },
+          ],
+        },
         buttonLabel: { type: "text" },
         successMessage: { type: "text" },
       },
@@ -610,6 +619,7 @@ export const puckConfig: Config<{ components: Components }> = {
         askEmail: "yes",
         askPhone: "no",
         askSubject: "no",
+        allowAttachment: "no",
         buttonLabel: "Send enquiry",
         successMessage: "Thanks — we've got your message and will be in touch.",
       },
@@ -620,6 +630,7 @@ export const puckConfig: Config<{ components: Components }> = {
         askEmail,
         askPhone,
         askSubject,
+        allowAttachment,
         buttonLabel,
         successMessage,
         puck,
@@ -652,6 +663,7 @@ export const puckConfig: Config<{ components: Components }> = {
                 buttonLabel={buttonLabel}
                 successMessage={successMessage}
                 pageSlug={pageSlug}
+                allowAttachment={allowAttachment === "yes"}
               />
             </div>
           </div>

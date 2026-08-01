@@ -1,7 +1,12 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { deleteSite, setSitePublished } from "./actions";
+import {
+  deleteSite,
+  duplicateSite,
+  publishAllPages,
+  setSitePublished,
+} from "./actions";
 
 type State = { error?: string; success?: string };
 
@@ -46,6 +51,24 @@ async function submitDelete(
   }
 }
 
+async function submitSiteAction(
+  _prevState: State,
+  formData: FormData,
+): Promise<State> {
+  const intent = String(formData.get("intent") || "");
+  try {
+    if (intent === "duplicate") await duplicateSite(formData);
+    else await publishAllPages(formData);
+    return {
+      success:
+        intent === "duplicate" ? "Copied." : "Every page with content is live.",
+    };
+  } catch (error) {
+    if (isRedirect(error)) throw error;
+    return { error: (error as Error).message };
+  }
+}
+
 export function SiteDangerZone({
   siteId,
   subdomain,
@@ -55,6 +78,10 @@ export function SiteDangerZone({
   subdomain: string;
   published: boolean;
 }) {
+  const [siteState, siteAction, sitePending] = useActionState(
+    submitSiteAction,
+    {},
+  );
   const [publishState, publishAction, publishPending] = useActionState(
     submitPublish,
     {},
@@ -67,6 +94,46 @@ export function SiteDangerZone({
 
   return (
     <div className="flex flex-col gap-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-6">
+        <div>
+          <p className="font-medium text-slate-100">Publish every page</p>
+          <p className="text-sm text-slate-400">
+            Puts all pages that have content live in one go. Empty pages are
+            skipped.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <form action={siteAction}>
+            <input type="hidden" name="siteId" value={siteId} />
+            <input type="hidden" name="intent" value="publish-all" />
+            <button
+              type="submit"
+              disabled={sitePending}
+              className="rounded-full bg-blue-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-400 disabled:opacity-50"
+            >
+              {sitePending ? "Working…" : "Publish all"}
+            </button>
+          </form>
+          <form action={siteAction}>
+            <input type="hidden" name="siteId" value={siteId} />
+            <input type="hidden" name="intent" value="duplicate" />
+            <button
+              type="submit"
+              disabled={sitePending}
+              className="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm font-medium text-slate-100 transition hover:bg-white/10 disabled:opacity-50"
+            >
+              Duplicate site
+            </button>
+          </form>
+        </div>
+      </div>
+      {siteState.error ? (
+        <p className="text-sm text-red-400">{siteState.error}</p>
+      ) : null}
+      {siteState.success ? (
+        <p className="text-sm text-emerald-400">{siteState.success}</p>
+      ) : null}
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="font-medium text-slate-100">

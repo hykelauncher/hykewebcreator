@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   createPage,
   deletePage,
+  duplicatePage,
   movePage,
   togglePageNav,
 } from "./actions";
@@ -52,6 +53,7 @@ async function submitPageAction(
     if (intent === "delete") await deletePage(formData);
     else if (intent === "move") await movePage(formData);
     else if (intent === "nav") await togglePageNav(formData);
+    else if (intent === "duplicate") await duplicatePage(formData);
     return {};
   } catch (error) {
     if (isRedirect(error)) throw error;
@@ -131,6 +133,18 @@ export function PagesManager({
                   className="rounded border border-white/10 bg-white/5 px-2 py-1 text-xs text-slate-300 hover:bg-white/10"
                 >
                   {page.showInNav ? "Hide from nav" : "Show in nav"}
+                </button>
+              </form>
+
+              <form action={rowAction}>
+                <input type="hidden" name="siteId" value={siteId} />
+                <input type="hidden" name="pageId" value={page.id} />
+                <input type="hidden" name="intent" value="duplicate" />
+                <button
+                  type="submit"
+                  className="rounded border border-white/10 bg-white/5 px-2 py-1 text-xs text-slate-300 hover:bg-white/10"
+                >
+                  Duplicate
                 </button>
               </form>
 
