@@ -7,6 +7,7 @@ import { pages, sites } from "@/db/schema";
 import { puckConfig } from "@/lib/puck-config";
 import { getSiteUrl } from "@/lib/tenant";
 import { themeStyle } from "@/lib/themes";
+import { SitePlugins } from "@/components/site-plugins";
 
 export const revalidate = 60;
 
@@ -109,6 +110,8 @@ export default async function TenantSitePage({
         data={page.publishedContent as never}
         metadata={{ pages: sitePages, currentSlug: pageSlug }}
       />
+      {/* Site-wide add-ons, outside the page content so they apply everywhere. */}
+      <SitePlugins plugins={site.plugins} />
     </div>
   );
 }

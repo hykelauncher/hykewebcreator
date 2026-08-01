@@ -9,6 +9,7 @@ import { getDb } from "@/db";
 import { assets, enquiries, pages, sites } from "@/db/schema";
 import { revalidateSite } from "@/lib/publish";
 import { THEMES } from "@/lib/themes";
+import { getPlugin } from "@/lib/plugins";
 import {
   newVerificationToken,
   validateCustomDomain,
@@ -305,6 +306,53 @@ export async function deleteEnquiry(formData: FormData) {
     .delete(enquiries)
     .where(and(eq(enquiries.id, enquiryId), eq(enquiries.siteId, siteId)));
 
+  revalidatePath(`/dashboard/${siteId}`);
+}
+
+export async function updatePlugin(formData: FormData) {
+  const userId = await requireAuth();
+
+  const siteId = String(formData.get("siteId") || "");
+  const pluginId = String(formData.get("pluginId") || "");
+  const site = await requireOwnedSite(siteId, userId);
+
+  const definition = getPlugin(pluginId);
+  if (!definition) throw new Error("Unknown plugin.");
+
+  const enabled = String(formData.get("enabled") || "") === "on";
+
+  const input: Record<string, string> = {};
+  for (const field of definition.fields) {
+    input[field.name] = String(formData.get(field.name) ?? "");
+  }
+
+  const existing =
+    typeof site.plugins === "object" && site.plugins !== null
+      ? (site.plugins as Record<string, unknown>)
+      : {};
+
+  let next: Record<string, unknown>;
+  if (!enabled) {
+    // Keep what was typed so switching back on doesn't mean retyping it.
+    next = { ...existing, [pluginId]: { ...input, enabled: false } };
+  } else {
+    const parsed = definition.parse(input);
+    if (!parsed) {
+      throw new Error(
+        `Check the ${definition.name.toLowerCase()} details — something isn't valid.`,
+      );
+    }
+    next = { ...existing, [pluginId]: { ...parsed, enabled: true } };
+  }
+
+  const db = getDb();
+  await db
+    .update(sites)
+    .set({ plugins: next, updatedAt: new Date() })
+    .where(eq(sites.id, site.id));
+
+  // Plugins render into every page, so all of them need rebuilding.
+  revalidateSite(site, await siteSlugs(site.id));
   revalidatePath(`/dashboard/${siteId}`);
 }
 

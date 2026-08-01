@@ -12,6 +12,7 @@ import { FaviconForm } from "./favicon-form";
 import { ThemeForm } from "./theme-form";
 import { SiteDangerZone } from "./site-danger-zone";
 import { EnquiriesList } from "./enquiries-list";
+import { PluginsForm } from "./plugins-form";
 
 export default async function SiteSettingsPage({
   params,
@@ -92,6 +93,11 @@ export default async function SiteSettingsPage({
             ) : null}
           </div>
           <EnquiriesList siteId={site.id} enquiries={siteEnquiries} />
+        </div>
+
+        <div className="glass-panel border-gradient p-6">
+          <h2 className="mb-4 text-lg font-semibold text-slate-100">Plugins</h2>
+          <PluginsForm siteId={site.id} plugins={site.plugins} />
         </div>
 
         <div className="glass-panel border-gradient p-6">

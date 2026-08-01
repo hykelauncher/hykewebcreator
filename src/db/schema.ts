@@ -30,6 +30,9 @@ export const sites = pgTable(
     themeId: text("theme_id").notNull().default("studio"),
     published: boolean("published").notNull().default(false),
     faviconUrl: text("favicon_url"),
+    // Site-wide add-ons (WhatsApp button, analytics, …) keyed by plugin id.
+    // See src/lib/plugins.ts — shape is validated there, not by the column.
+    plugins: jsonb("plugins").notNull().default({}),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

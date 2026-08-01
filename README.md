@@ -164,6 +164,16 @@ Clerk, and Vercel Blob are all provisioned as Marketplace integrations on
 this project (`vercel integration list`), so env vars are already synced —
 `vercel env pull` if `.env.local` goes stale.
 
+## Planned
+
+- **Email notifications for enquiries.** A submission is recorded and shown in
+  the site's inbox, and that's it — the owner has to check the dashboard to
+  find out. For anyone actually taking bookings this is the biggest remaining
+  gap: a missed check is a missed job. The intended shape is a Marketplace
+  email provider plus a per-site notification address, sent on insert in
+  `/api/enquiries`. Surfaced as "Coming soon" in the Plugins panel so the gap
+  is visible rather than silently absent.
+
 ## Known limitations / next steps
 
 - **Custom domains still need a manual Vercel step.** Ownership is now proven
@@ -182,7 +192,13 @@ this project (`vercel integration list`), so env vars are already synced —
   needs real pointer-motion sequences) — when verifying new blocks, seed
   `pages.content` directly via a one-off script instead of trying to
   automate the drag.
-- No analytics, no billing/plans, no team/multi-user sites. Page order and
+- **Plugins are site-wide add-ons** (`src/lib/plugins.ts`), configured once in
+  site settings and rendered on every page by `SitePlugins` — distinct from
+  blocks, which live inside one page's content. Ships with a WhatsApp button,
+  a call button, social links and analytics. Every stored value is
+  re-validated at render time, not just on save, because some of it reaches a
+  script tag.
+- No billing/plans, no team/multi-user sites. Page order and
   which pages appear in the Nav block are managed from site settings; there's
   still no per-link renaming or nesting.
 - **Publishing is per page.** There's no "publish the whole site" button — an
