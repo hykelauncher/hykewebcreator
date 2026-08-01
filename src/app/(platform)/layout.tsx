@@ -1,5 +1,15 @@
+import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Nav } from "@/components/nav";
+
+export const metadata: Metadata = {
+  title: {
+    default: "Hyke — build and publish your website",
+    template: "%s · Hyke",
+  },
+  description:
+    "Pick a template, drag and drop your way through a page, and publish it to the web.",
+};
 
 export default function PlatformLayout({
   children,
