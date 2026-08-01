@@ -1,6 +1,7 @@
 import Script from "next/script";
 import { readPluginConfig } from "@/lib/plugins";
 import { CartDrawer } from "@/components/cart-drawer";
+import { ReportSite } from "@/components/report-site";
 
 /**
  * Renders a published site's enabled plugins.
@@ -130,6 +131,10 @@ export function SitePlugins({ plugins }: { plugins: unknown }) {
           ) : null}
         </div>
       ) : null}
+
+      {/* Not optional: a site that could hide the report link is exactly the
+          site that would. */}
+      <ReportSite platformName="Hyke" />
 
       {shop ? (
         <CartDrawer

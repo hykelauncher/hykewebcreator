@@ -7,6 +7,7 @@ import { getDb } from "@/db";
 import { pageVersions, pages, sites } from "@/db/schema";
 import { extractPageMeta, parsePuckData } from "@/lib/puck-data";
 import { revalidateSite } from "@/lib/publish";
+import { recordAudit } from "@/lib/audit";
 
 export type PublishResult = { ok: true; publishedAt: string } | { ok: false; error: string };
 
@@ -71,6 +72,13 @@ export async function publishPage(
     .select({ slug: pages.slug })
     .from(pages)
     .where(eq(pages.siteId, site.id));
+
+  await recordAudit({
+    userId,
+    siteId: site.id,
+    action: "site.publish",
+    detail: `/${page.slug}`,
+  });
 
   revalidateSite(site, sitePages.map((p) => p.slug));
   revalidatePath(`/dashboard/${site.id}`);

@@ -17,6 +17,7 @@ import {
 import { revalidateSite } from "@/lib/publish";
 import { THEMES } from "@/lib/themes";
 import { getPlugin } from "@/lib/plugins";
+import { recordAudit } from "@/lib/audit";
 import {
   newVerificationToken,
   validateCustomDomain,
@@ -123,6 +124,13 @@ export async function verifyCustomDomain(formData: FormData) {
     .update(sites)
     .set({ customDomainVerified: true, updatedAt: new Date() })
     .where(eq(sites.id, site.id));
+
+  await recordAudit({
+    userId,
+    siteId: site.id,
+    action: "domain.verify",
+    detail: site.customDomain,
+  });
 
   // Now that the domain resolves, prime its cache entries.
   const slugs = await siteSlugs(site.id);
@@ -600,6 +608,13 @@ export async function setSitePublished(formData: FormData) {
     .set({ published, updatedAt: new Date() })
     .where(eq(sites.id, site.id));
 
+  await recordAudit({
+    userId,
+    siteId: site.id,
+    action: published ? "site.publish" : "site.unpublish",
+    detail: site.subdomain,
+  });
+
   revalidateSite(site, await siteSlugs(site.id));
   revalidatePath(`/dashboard/${siteId}`);
   revalidatePath("/dashboard");
@@ -637,6 +652,15 @@ export async function deleteSite(formData: FormData) {
       // Orphaned blobs are recoverable; a half-deleted site is not.
     }
   }
+
+  // Recorded before the row goes: the site id is a foreign key, and the point
+  // of the entry is that this site existed and who removed it.
+  await recordAudit({
+    userId,
+    siteId: null,
+    action: "site.delete",
+    detail: `${site.subdomain} (${site.name})`,
+  });
 
   // pages and assets are ON DELETE CASCADE from sites.
   await db.delete(sites).where(eq(sites.id, site.id));

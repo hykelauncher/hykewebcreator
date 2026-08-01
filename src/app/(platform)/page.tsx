@@ -213,8 +213,30 @@ export default async function HomePage() {
         </Link>
       </section>
 
-      <footer className="border-t border-white/10 px-6 py-10 text-center text-sm text-slate-500">
-        Hyke — build and host your own website.
+      <footer className="border-t border-white/10 px-6 py-10">
+        <div className="mx-auto flex w-full max-w-5xl flex-col items-center gap-4 text-sm text-slate-500">
+          <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+            <Link href="/legal/about" className="hover:text-slate-300">
+              About
+            </Link>
+            <Link href="/legal/how-it-works" className="hover:text-slate-300">
+              How to use Hyke
+            </Link>
+            <Link href="/legal/terms" className="hover:text-slate-300">
+              Terms
+            </Link>
+            <Link href="/legal/acceptable-use" className="hover:text-slate-300">
+              Acceptable use
+            </Link>
+            <Link href="/legal/privacy" className="hover:text-slate-300">
+              Privacy
+            </Link>
+            <Link href="/legal/report" className="hover:text-slate-300">
+              Report a site
+            </Link>
+          </nav>
+          <p>Hyke — build and host your own website.</p>
+        </div>
       </footer>
     </main>
   );

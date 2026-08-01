@@ -8,6 +8,7 @@ import { pages, sites } from "@/db/schema";
 import { getTemplate } from "@/lib/templates";
 import { validateSubdomain } from "@/lib/subdomain";
 import { DEFAULT_THEME_ID } from "@/lib/themes";
+import { recordAudit } from "@/lib/audit";
 
 export async function createSite(formData: FormData) {
   const { userId } = await auth();
@@ -61,6 +62,13 @@ export async function createSite(formData: FormData) {
       content: page.data,
     })),
   ]);
+
+  await recordAudit({
+    userId,
+    siteId,
+    action: "site.create",
+    detail: `${subdomain.value} (${template.id})`,
+  });
 
   revalidatePath("/dashboard");
   redirect(`/editor/${siteId}`);

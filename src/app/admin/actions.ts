@@ -6,6 +6,7 @@ import { getDb } from "@/db";
 import { pages, sites } from "@/db/schema";
 import { requireAdmin } from "@/lib/admin";
 import { revalidateSite } from "@/lib/publish";
+import { recordAudit } from "@/lib/audit";
 
 /**
  * Admin actions.
@@ -29,7 +30,7 @@ async function siteSlugs(siteId: string) {
  * reversible, and destroying someone's work on a report is not.
  */
 export async function adminSetPublished(formData: FormData) {
-  await requireAdmin();
+  const adminId = await requireAdmin();
 
   const siteId = String(formData.get("siteId") || "");
   const published = String(formData.get("published") || "") === "true";
@@ -44,6 +45,14 @@ export async function adminSetPublished(formData: FormData) {
     .update(sites)
     .set({ published, updatedAt: new Date() })
     .where(eq(sites.id, site.id));
+
+  // Moderation is the action most worth being able to account for later.
+  await recordAudit({
+    userId: adminId,
+    siteId: site.id,
+    action: published ? "admin.restore" : "admin.unpublish",
+    detail: `${site.subdomain} (owner ${site.ownerId})`,
+  });
 
   revalidateSite(site, await siteSlugs(site.id));
   revalidatePath("/admin");

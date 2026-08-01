@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { desc, eq, isNotNull, sql } from "drizzle-orm";
 import { getDb } from "@/db";
-import { enquiries, pages, sites, subscribers } from "@/db/schema";
+import { auditLog, enquiries, pages, reports, sites, subscribers } from "@/db/schema";
 import { isAdmin } from "@/lib/admin";
 import { getSiteUrl } from "@/lib/tenant";
 import { getTheme } from "@/lib/themes";
@@ -51,6 +51,29 @@ export default async function AdminPage() {
     .select({ subscriberCount: sql<number>`count(*)::int` })
     .from(subscribers);
 
+  const openReports = await db
+    .select({
+      id: reports.id,
+      siteId: reports.siteId,
+      reason: reports.reason,
+      detail: reports.detail,
+      createdAt: reports.createdAt,
+      subdomain: sites.subdomain,
+      siteName: sites.name,
+      ownerId: sites.ownerId,
+    })
+    .from(reports)
+    .innerJoin(sites, eq(sites.id, reports.siteId))
+    .where(eq(reports.status, "open"))
+    .orderBy(desc(reports.createdAt))
+    .limit(25);
+
+  const recentAudit = await db
+    .select()
+    .from(auditLog)
+    .orderBy(desc(auditLog.createdAt))
+    .limit(20);
+
   const perSite = await db
     .select({
       siteId: enquiries.siteId,
@@ -66,6 +89,7 @@ export default async function AdminPage() {
     { label: "Live pages", value: livePages },
     { label: "Enquiries", value: enquiryCount },
     { label: "Subscribers", value: subscriberCount },
+    { label: "Open reports", value: openReports.length },
   ];
 
   return (
@@ -106,6 +130,49 @@ export default async function AdminPage() {
               </p>
             </div>
           ))}
+        </div>
+
+        {/* Reports first: they are the only thing here that might be urgent. */}
+        <div className="glass-panel border-gradient p-6">
+          <h2 className="mb-4 text-lg font-semibold text-slate-100">
+            Open reports
+          </h2>
+          {openReports.length === 0 ? (
+            <p className="text-sm text-slate-400">
+              Nothing reported. Every published site carries a report link in
+              its footer.
+            </p>
+          ) : (
+            <ul className="flex flex-col gap-3">
+              {openReports.map((r) => (
+                <li
+                  key={r.id}
+                  className="rounded-xl border border-amber-400/25 bg-amber-400/5 p-4"
+                >
+                  <div className="flex flex-wrap items-baseline justify-between gap-2">
+                    <p className="font-medium text-slate-100">
+                      {r.siteName}{" "}
+                      <span className="text-sm text-slate-400">
+                        ({r.subdomain})
+                      </span>
+                    </p>
+                    <span className="rounded-full bg-amber-400/20 px-2.5 py-1 text-xs font-semibold uppercase tracking-wider text-amber-200">
+                      {r.reason}
+                    </span>
+                  </div>
+                  {r.detail ? (
+                    <p className="mt-2 whitespace-pre-line text-sm text-slate-300">
+                      {r.detail}
+                    </p>
+                  ) : null}
+                  <p className="mt-2 text-xs text-slate-500">
+                    {new Date(r.createdAt).toLocaleString()} · owner{" "}
+                    <code>{r.ownerId.slice(0, 16)}…</code>
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
         <div className="glass-panel border-gradient overflow-hidden">
@@ -201,6 +268,34 @@ export default async function AdminPage() {
               </tbody>
             </table>
           </div>
+        </div>
+
+        <div className="glass-panel border-gradient p-6">
+          <h2 className="mb-1 text-lg font-semibold text-slate-100">
+            Recent activity
+          </h2>
+          <p className="mb-4 text-sm text-slate-400">
+            Consequential actions only, kept for 12 months. This is what you
+            would hand to a bank or the police.
+          </p>
+          {recentAudit.length === 0 ? (
+            <p className="text-sm text-slate-400">Nothing recorded yet.</p>
+          ) : (
+            <ul className="flex flex-col gap-1.5">
+              {recentAudit.map((a) => (
+                <li
+                  key={a.id}
+                  className="flex flex-wrap items-baseline gap-x-3 gap-y-1 rounded-lg border border-white/10 bg-white/[0.02] px-4 py-2.5 text-sm"
+                >
+                  <code className="text-xs text-blue-300">{a.action}</code>
+                  <span className="text-slate-300">{a.detail}</span>
+                  <span className="ml-auto text-xs text-slate-500">
+                    {a.ip ?? "no ip"} · {new Date(a.createdAt).toLocaleString()}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
     </main>

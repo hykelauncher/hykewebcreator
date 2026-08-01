@@ -94,6 +94,54 @@ export const pageVersions = pgTable("page_versions", {
 });
 
 /**
+ * A record of consequential actions, for accountability and abuse
+ * investigation.
+ *
+ * Deliberately narrow: who did what, when, from which address and browser —
+ * and only for actions that matter (creating, publishing, deleting, claiming a
+ * domain). It is not analytics and not a device fingerprint. Collecting the
+ * minimum that answers "who put this here" keeps it proportionate, which is
+ * both the lawful position and the useful one.
+ *
+ * Entries are pruned on a schedule (see docs in /privacy). Keeping them
+ * forever turns a safety measure into a liability.
+ */
+export const auditLog = pgTable("audit_log", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id"),
+  siteId: uuid("site_id").references(() => sites.id, { onDelete: "set null" }),
+  action: text("action").notNull(),
+  detail: text("detail"),
+  ip: text("ip"),
+  userAgent: text("user_agent"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+/**
+ * Abuse reports from the public.
+ *
+ * Fraud is usually reported before it is detected, so every published site
+ * carries a way to raise one. No account required — requiring a login is a
+ * good way never to hear about a scam.
+ */
+export const reports = pgTable("reports", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  siteId: uuid("site_id")
+    .notNull()
+    .references(() => sites.id, { onDelete: "cascade" }),
+  reason: text("reason").notNull(),
+  detail: text("detail"),
+  reporterEmail: text("reporter_email"),
+  ip: text("ip"),
+  status: text("status").notNull().default("open"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+/**
  * Newsletter signups from a published site.
  *
  * Kept separate from enquiries: an enquiry is a message somebody expects a
