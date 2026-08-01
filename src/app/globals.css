@@ -1,26 +1,180 @@
 @import "tailwindcss";
 
+/* ---------------------------------------------------------------------------
+   Design tokens
+
+   Two layers:
+   1. `--site-*` raw values. A published site overrides these inline from its
+      theme (see src/lib/themes.ts), which is how one block system renders as
+      several visually distinct templates.
+   2. `@theme inline` maps them to Tailwind utilities. Blocks use the utilities
+      and never hardcode a colour, radius or shadow.
+--------------------------------------------------------------------------- */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --site-background: #ffffff;
+  --site-foreground: #131316;
+  --site-surface: #ffffff;
+  --site-surface-subtle: #f7f7f8;
+  --site-border: rgba(19, 19, 22, 0.1);
+  --site-border-strong: rgba(19, 19, 22, 0.18);
+  --site-muted: rgba(19, 19, 22, 0.62);
+  --site-accent: #131316;
+
+  --site-radius-card: 1.25rem;
+  --site-radius-pill: 999px;
+
+  --site-font-display: var(--font-outfit);
+  --site-font-body: var(--font-work-sans);
+
+  /* Layered neutral elevation, untinted so it works under any accent. */
+  --site-shadow-soft:
+    0 1px 1px -0.5px rgba(0, 0, 0, 0.05), 0 3px 3px -1.5px rgba(0, 0, 0, 0.05),
+    0 6px 6px -3px rgba(0, 0, 0, 0.05);
+  --site-shadow-raised:
+    0 1px 1px -0.5px rgba(0, 0, 0, 0.06), 0 3px 3px -1.5px rgba(0, 0, 0, 0.06),
+    0 6px 6px -3px rgba(0, 0, 0, 0.06), 0 12px 12px -6px rgba(0, 0, 0, 0.06),
+    0 24px 24px -12px rgba(0, 0, 0, 0.06);
+  --site-shadow-lifted:
+    0 6.7px 5.3px rgba(0, 0, 0, 0.028), 0 12.5px 10px rgba(0, 0, 0, 0.035),
+    0 22.3px 17.9px rgba(0, 0, 0, 0.045), 0 41.8px 33.4px rgba(0, 0, 0, 0.055),
+    0 100px 80px rgba(0, 0, 0, 0.07);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
+/* Only the default theme follows the visitor's OS setting. A template built
+   as a warm light system (or a near-black editorial one) sets its palette
+   explicitly and stays put, so its owner knows what visitors see. */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  :root:not([data-theme]) {
+    --site-background: #0b0b0d;
+    --site-foreground: #f2f2f3;
+    --site-surface: #141417;
+    --site-surface-subtle: #1a1a1e;
+    --site-border: rgba(255, 255, 255, 0.1);
+    --site-border-strong: rgba(255, 255, 255, 0.18);
+    --site-muted: rgba(242, 242, 243, 0.62);
+    --site-accent: #f2f2f3;
+
+    /* Shadows barely register on dark surfaces, so depth comes from a
+       hairline top highlight plus a deeper ambient drop. */
+    --site-shadow-soft:
+      inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 2px 8px rgba(0, 0, 0, 0.5);
+    --site-shadow-raised:
+      inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 8px 24px rgba(0, 0, 0, 0.55);
+    --site-shadow-lifted:
+      inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 24px 64px rgba(0, 0, 0, 0.6);
   }
 }
 
+@theme inline {
+  --color-background: var(--site-background);
+  --color-foreground: var(--site-foreground);
+  --color-surface: var(--site-surface);
+  --color-surface-subtle: var(--site-surface-subtle);
+  --color-line: var(--site-border);
+  --color-line-strong: var(--site-border-strong);
+  --color-muted: var(--site-muted);
+  --color-accent: var(--site-accent);
+
+  --font-display: var(--site-font-display);
+  --font-sans: var(--site-font-body);
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Perfect-fourth scale (1.333), clamped so headlines stay proportionate on
+     phones without breakpoint overrides in every block. */
+  --text-eyebrow: 0.75rem;
+  --text-body: 1.0625rem;
+  --text-lead: clamp(1.15rem, 1.05rem + 0.5vw, 1.333rem);
+  --text-h3: clamp(1.35rem, 1.2rem + 0.75vw, 1.777rem);
+  --text-h2: clamp(1.85rem, 1.5rem + 1.5vw, 2.369rem);
+  --text-h1: clamp(2.5rem, 1.9rem + 3vw, 4.209rem);
+
+  --radius-card: var(--site-radius-card);
+  --radius-pill: var(--site-radius-pill);
+
+  --shadow-soft: var(--site-shadow-soft);
+  --shadow-raised: var(--site-shadow-raised);
+  --shadow-lifted: var(--site-shadow-lifted);
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--site-background);
+  color: var(--site-foreground);
+  /* layout.tsx loads the fonts and exposes them as --font-*. This used to
+     hardcode Arial, which silently overrode them everywhere, including on
+     published tenant sites. */
+  font-family: var(--site-font-body), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* A themed wrapper repaints its own subtree, so a site's palette applies even
+   though the <body> above belongs to the platform shell. */
+[data-theme] {
+  background: var(--site-background);
+  color: var(--site-foreground);
+  font-family: var(--site-font-body), ui-sans-serif, system-ui, sans-serif;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--site-font-display), ui-sans-serif, system-ui, sans-serif;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Dark glassmorphism tokens + panel/border utilities (dashboard) */
+:root {
+  --glass-bg-0: #020617;
+  --glass-bg-1: #0b1220;
+  --glass-fill: rgba(15, 23, 42, 0.45);
+  --glass-fill-strong: rgba(15, 23, 42, 0.62);
+}
+
+.glass-panel {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
+  background-color: var(--glass-fill);
+  border-radius: 24px;
+  box-shadow:
+    0 20px 48px rgba(2, 6, 23, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+}
+
+.border-gradient {
+  position: relative;
+}
+
+.border-gradient::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  background: linear-gradient(
+    145deg,
+    rgba(148, 163, 184, 0.28) 0%,
+    rgba(96, 165, 250, 0.36) 45%,
+    rgba(168, 85, 247, 0.3) 70%,
+    rgba(148, 163, 184, 0.18) 100%
+  );
+  pointer-events: none;
 }
