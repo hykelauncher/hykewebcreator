@@ -99,14 +99,27 @@ export default function PrivacyPage() {
       <UL>
         <li>Sites and their content: until you delete them or close your account</li>
         <li>Audit entries: 12 months</li>
-        <li>Abuse reports: 24 months, since patterns matter for repeat offenders</li>
-        <li>Enquiries and subscribers: until the site owner deletes them or deletes the site</li>
+        <li>
+          Closed abuse reports, and any evidence kept alongside them: 24 months,
+          since patterns matter for repeat offenders
+        </li>
+        <li>
+          Open abuse reports: kept until they are closed. A report nobody has
+          finished looking at is not deleted for reaching an age
+        </li>
+        <li>
+          Enquiries and subscribers: until the site owner deletes them or
+          deletes the site
+        </li>
       </UL>
+      <P>
+        This is enforced, not just stated: a scheduled job runs daily and
+        deletes whatever is past its window.
+      </P>
       <NeedsReview>
-        These retention periods are sensible defaults, not legal requirements.
-        Confirm them, and put the audit and report pruning on an actual
-        schedule — a stated period you do not enforce is worse than a longer
-        one you do.
+        The periods themselves are sensible defaults rather than legal
+        requirements — worth confirming against your obligations, particularly
+        if you later handle payments.
       </NeedsReview>
 
       <H2>Your rights</H2>
