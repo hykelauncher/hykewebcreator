@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { desc, eq, isNotNull, sql } from "drizzle-orm";
+import { desc, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import { getDb } from "@/db";
 import {
   auditLog,
   enquiries,
+  pageVersions,
   pages,
   preservedSites,
   reports,
@@ -82,6 +83,40 @@ export default async function AdminPage() {
     .leftJoin(sites, eq(sites.id, reports.siteId))
     .orderBy(desc(reports.createdAt))
     .limit(25);
+
+  // Publishes on reported sites, so a site quietly edited after a complaint
+  // doesn't look identical to one that was never dirty. Editing a reported
+  // site clean before anyone checks is the obvious evasion, and the publish
+  // history is what gives it away.
+  const reportedSiteIds = [
+    ...new Set(openReports.map((r) => r.siteId).filter(Boolean)),
+  ] as string[];
+
+  const publishActivity = reportedSiteIds.length
+    ? await db
+        .select({
+          siteId: pages.siteId,
+          publishedAt: pageVersions.createdAt,
+        })
+        .from(pageVersions)
+        .innerJoin(pages, eq(pages.id, pageVersions.pageId))
+        .where(inArray(pages.siteId, reportedSiteIds))
+    : [];
+
+  const changedSinceReport = (siteId: string | null, since: Date) => {
+    if (!siteId) return { count: 0, latest: null as Date | null };
+    const after = publishActivity.filter(
+      (a) => a.siteId === siteId && new Date(a.publishedAt) > new Date(since),
+    );
+    return {
+      count: after.length,
+      latest: after.length
+        ? new Date(
+            Math.max(...after.map((a) => new Date(a.publishedAt).getTime())),
+          )
+        : null,
+    };
+  };
 
   const stillOpen = openReports.filter((r) => r.status === "open");
   const recentlyClosed = openReports.filter((r) => r.status !== "open");
@@ -193,6 +228,21 @@ export default async function AdminPage() {
                     {new Date(r.createdAt).toLocaleString()} · owner{" "}
                     <code>{r.ownerId.slice(0, 16)}…</code>
                   </p>
+                  {(() => {
+                    const changed = changedSinceReport(r.siteId, r.createdAt);
+                    if (changed.count === 0) return null;
+                    return (
+                      <p className="mt-2 rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-2 text-xs text-red-200">
+                        <strong>
+                          Edited {changed.count} time
+                          {changed.count === 1 ? "" : "s"} since this report
+                        </strong>{" "}
+                        — last published{" "}
+                        {changed.latest?.toLocaleString()}. Every version is
+                        kept; export the evidence before acting.
+                      </p>
+                    );
+                  })()}
                   <div className="mt-2 flex flex-wrap items-start gap-2">
                     <OwnerLookup userId={r.ownerId} />
                     {/* A report outlives its site, so there may be nothing

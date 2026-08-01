@@ -4,7 +4,7 @@ import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { del } from "@vercel/blob";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import { getDb } from "@/db";
 import {
   assets,
@@ -207,6 +207,47 @@ export async function deletePage(formData: FormData) {
   if (page.isHome) throw new Error("Can't delete the home page.");
 
   const slugs = await siteSlugs(site.id);
+
+  // Deleting a page destroys its publish history along with it. That is fine
+  // ordinarily, and not fine at all for a site somebody has reported: editing
+  // a page clean and then removing it is the obvious way to erase what it
+  // actually said. So for a reported site, keep the history first.
+  const siteReports = await db
+    .select({ id: reports.id })
+    .from(reports)
+    .where(eq(reports.siteId, site.id));
+
+  if (siteReports.length > 0) {
+    const history = await db
+      .select({
+        title: pageVersions.title,
+        content: pageVersions.content,
+        createdAt: pageVersions.createdAt,
+      })
+      .from(pageVersions)
+      .where(eq(pageVersions.pageId, page.id))
+      .orderBy(asc(pageVersions.createdAt));
+
+    await db.insert(preservedSites).values({
+      subdomain: site.subdomain,
+      name: site.name,
+      ownerId: site.ownerId,
+      customDomain: site.customDomain,
+      reportCount: siteReports.length,
+      note: `Page deleted: /${page.slug}`,
+      snapshot: {
+        pages: [
+          {
+            slug: page.slug,
+            title: page.title,
+            publishedContent: page.publishedContent,
+            publishedAt: page.publishedAt,
+            versions: history,
+          },
+        ],
+      },
+    });
+  }
 
   await db.delete(pages).where(eq(pages.id, pageId));
 
@@ -667,6 +708,7 @@ export async function deleteSite(formData: FormData) {
   if (siteReports.length > 0) {
     const published = await db
       .select({
+        id: pages.id,
         slug: pages.slug,
         title: pages.title,
         publishedContent: pages.publishedContent,
@@ -675,17 +717,49 @@ export async function deleteSite(formData: FormData) {
       .from(pages)
       .where(eq(pages.siteId, site.id));
 
+    // Every published version, not just the current one — what the site says
+    // today is the least interesting part once it has been reported.
+    const history = published.length
+      ? await db
+          .select({
+            pageId: pageVersions.pageId,
+            title: pageVersions.title,
+            content: pageVersions.content,
+            createdAt: pageVersions.createdAt,
+          })
+          .from(pageVersions)
+          .where(
+            inArray(
+              pageVersions.pageId,
+              published.map((p) => p.id),
+            ),
+          )
+      : [];
+
     await db.insert(preservedSites).values({
       subdomain: site.subdomain,
       name: site.name,
       ownerId: site.ownerId,
       customDomain: site.customDomain,
       reportCount: siteReports.length,
+      note: "Whole site deleted",
       snapshot: {
         themeId: site.themeId,
         plugins: site.plugins,
         createdAt: site.createdAt,
-        pages: published,
+        pages: published.map((p) => ({
+          slug: p.slug,
+          title: p.title,
+          publishedContent: p.publishedContent,
+          publishedAt: p.publishedAt,
+          versions: history
+            .filter((v) => v.pageId === p.id)
+            .map(({ title, content, createdAt }) => ({
+              title,
+              content,
+              createdAt,
+            })),
+        })),
       },
     });
   }

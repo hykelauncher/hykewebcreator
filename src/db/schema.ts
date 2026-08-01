@@ -161,7 +161,13 @@ export const preservedSites = pgTable("preserved_sites", {
   ownerId: text("owner_id").notNull(),
   customDomain: text("custom_domain"),
   reportCount: integer("report_count").notNull().default(0),
-  /** Published pages as they stood: slug, title and content. */
+  /** What triggered preservation: the whole site, or one page removed from it. */
+  note: text("note"),
+  /**
+   * Published pages as they stood, each with its full publish history. The
+   * history is the point: an owner who edits a reported site clean is exactly
+   * the case this exists for.
+   */
   snapshot: jsonb("snapshot").notNull(),
   deletedAt: timestamp("deleted_at", { withTimezone: true })
     .notNull()
