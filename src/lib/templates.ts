@@ -132,8 +132,12 @@ function buttonAt(
   label: string,
   href: string,
   variant: "solid" | "outline" = "solid",
+  useWhatsApp: "yes" | "no" = "no",
 ) {
-  return { type: "Button" as const, props: { id, label, href, variant } };
+  return {
+    type: "Button" as const,
+    props: { id, label, href, variant, useWhatsApp },
+  };
 }
 
 function image(
@@ -202,11 +206,17 @@ function band(props: {
   text: string;
   buttonLabel: string;
   buttonHref: string;
+  useWhatsApp?: "yes" | "no";
   note?: string;
 }) {
   return {
     type: "Band" as const,
-    props: { tone: "band" as const, note: "", ...props },
+    props: {
+      tone: "band" as const,
+      useWhatsApp: "no" as const,
+      note: "",
+      ...props,
+    },
   };
 }
 
@@ -1017,8 +1027,9 @@ export const TEMPLATES: Template[] = [
           eyebrow: "We cater for all events",
           heading: "Weddings, birthdays, corporate & private parties",
           text: "Tell us your headcount and date — we'll build a custom package and bring great taste to your occasion.",
-          buttonLabel: "Request a quote",
+          buttonLabel: "Request a quote on WhatsApp",
           buttonHref: "/events",
+          useWhatsApp: "yes",
           note: "Call us on 000 0000 0000",
         }),
         spacer("cat-sp-1", "md"),
@@ -1261,8 +1272,9 @@ export const TEMPLATES: Template[] = [
               eyebrow: "Not sure what you need?",
               heading: "We'll build a package around your headcount",
               text: "Send us the date and numbers and we'll come back with a quote.",
-              buttonLabel: "Request a quote",
+              buttonLabel: "Request a quote on WhatsApp",
               buttonHref: "/events",
+              useWhatsApp: "yes",
             }),
             spacer("catmenu-sp-1", "lg"),
           ],

@@ -44,6 +44,35 @@ const EYEBROW =
   "text-eyebrow font-semibold uppercase tracking-[0.18em] text-muted";
 
 /**
+ * Resolves a call-to-action link.
+ *
+ * A button set to use WhatsApp points at whatever number the site's WhatsApp
+ * plugin holds, so the template never carries a phone number and one setting
+ * updates every button. If the plugin is off, the button quietly falls back to
+ * its normal link rather than breaking.
+ */
+function ctaHref(
+  useWhatsApp: string | undefined,
+  href: string,
+  puck: { metadata?: Record<string, unknown> } | undefined,
+): { href: string; external: boolean } {
+  const whatsappUrl = puck?.metadata?.whatsappUrl as string | undefined;
+  if (useWhatsApp === "yes" && whatsappUrl) {
+    return { href: whatsappUrl, external: true };
+  }
+  return { href, external: false };
+}
+
+const WHATSAPP_FIELD = {
+  type: "radio" as const,
+  label: "Send to WhatsApp instead",
+  options: [
+    { label: "No", value: "no" },
+    { label: "Yes", value: "yes" },
+  ],
+};
+
+/**
  * Empty upload slot. Deliberately neutral rather than a coloured gradient —
  * a fixed bright placeholder fights any theme that isn't cool-toned, and it
  * reads as content rather than as an empty slot waiting for a file.
@@ -60,7 +89,12 @@ const DOT_GRID: React.CSSProperties = {
 type Components = {
   Heading: { text: string; level: "h1" | "h2" | "h3"; align: "left" | "center" };
   Text: { text: string; align: "left" | "center" };
-  Button: { label: string; href: string; variant: "solid" | "outline" };
+  Button: {
+    label: string;
+    href: string;
+    variant: "solid" | "outline";
+    useWhatsApp: "yes" | "no";
+  };
   Image: {
     src: string;
     alt: string;
@@ -107,6 +141,7 @@ type Components = {
     text: string;
     buttonLabel: string;
     buttonHref: string;
+    useWhatsApp: "yes" | "no";
     note: string;
   };
   Spacer: { height: "sm" | "md" | "lg" };
@@ -254,14 +289,24 @@ export const puckConfig: Config<{ components: Components }> = {
             { label: "Outline", value: "outline" },
           ],
         },
+        useWhatsApp: WHATSAPP_FIELD,
       },
-      defaultProps: { label: "Click me", href: "#", variant: "solid" },
-      render: ({ label, href, variant }) => (
+      defaultProps: {
+        label: "Click me",
+        href: "#",
+        variant: "solid",
+        useWhatsApp: "no",
+      },
+      render: ({ label, href, variant, useWhatsApp, puck }) => {
+        const link = ctaHref(useWhatsApp, href, puck);
+        return (
         <div className={`${SECTION} py-3`}>
           {/* Theme-aware rather than hardcoded black-on-white: a black pill is
               nearly invisible on a site rendering in dark mode. */}
           <a
-            href={href}
+            href={link.href}
+            target={link.external ? "_blank" : undefined}
+            rel={link.external ? "noreferrer noopener" : undefined}
             // Content saved before this field existed has no `variant`, so
             // solid must be the fallback rather than the explicit match.
             className={
@@ -273,7 +318,8 @@ export const puckConfig: Config<{ components: Components }> = {
             {label}
           </a>
         </div>
-      ),
+        );
+      },
     },
     Image: {
       fields: {
@@ -627,6 +673,7 @@ export const puckConfig: Config<{ components: Components }> = {
         text: { type: "textarea" },
         buttonLabel: { type: "text" },
         buttonHref: { type: "text" },
+        useWhatsApp: WHATSAPP_FIELD,
         note: { type: "text", label: "Line under the button (optional)" },
       },
       defaultProps: {
@@ -636,9 +683,21 @@ export const puckConfig: Config<{ components: Components }> = {
         text: "One or two lines that earn the click.",
         buttonLabel: "Get in touch",
         buttonHref: "#contact",
+        useWhatsApp: "no",
         note: "",
       },
-      render: ({ tone, eyebrow, heading, text, buttonLabel, buttonHref, note }) => {
+      render: ({
+        tone,
+        eyebrow,
+        heading,
+        text,
+        buttonLabel,
+        buttonHref,
+        useWhatsApp,
+        note,
+        puck,
+      }) => {
+        const link = ctaHref(useWhatsApp, buttonHref, puck);
         // `band` uses the theme's own band colour where it defines one and
         // falls back to the accent, so this works in every theme.
         const background =
@@ -671,7 +730,9 @@ export const puckConfig: Config<{ components: Components }> = {
               <div className="flex min-w-[220px] flex-col items-start gap-3">
                 {buttonLabel ? (
                   <a
-                    href={buttonHref}
+                    href={link.href}
+                    target={link.external ? "_blank" : undefined}
+                    rel={link.external ? "noreferrer noopener" : undefined}
                     className="inline-flex items-center rounded-pill bg-accent px-7 py-3.5 font-bold text-neutral-900 shadow-soft transition duration-200 ease-out hover:-translate-y-0.5"
                   >
                     {buttonLabel}

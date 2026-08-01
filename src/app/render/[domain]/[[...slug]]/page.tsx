@@ -8,6 +8,7 @@ import { puckConfig } from "@/lib/puck-config";
 import { getSiteUrl } from "@/lib/tenant";
 import { themeStyle } from "@/lib/themes";
 import { SitePlugins } from "@/components/site-plugins";
+import { readPluginConfig } from "@/lib/plugins";
 
 export const revalidate = 60;
 
@@ -101,6 +102,8 @@ export default async function TenantSitePage({
     )
     .orderBy(asc(pages.sortOrder), asc(pages.createdAt));
 
+  const whatsapp = readPluginConfig(site.plugins, "whatsapp");
+
   // `data-theme` both carries the palette and opts the site out of the
   // OS-driven dark mode that only the default theme responds to.
   return (
@@ -108,7 +111,19 @@ export default async function TenantSitePage({
       <Render
         config={puckConfig}
         data={page.publishedContent as never}
-        metadata={{ pages: sitePages, currentSlug: pageSlug }}
+        metadata={{
+          pages: sitePages,
+          currentSlug: pageSlug,
+          // Lets any call-to-action point at the site's WhatsApp number
+          // without the number being written into page content.
+          whatsappUrl: whatsapp
+            ? `https://wa.me/${whatsapp.phone}${
+                whatsapp.message
+                  ? `?text=${encodeURIComponent(whatsapp.message)}`
+                  : ""
+              }`
+            : undefined,
+        }}
       />
       {/* Site-wide add-ons, outside the page content so they apply everywhere. */}
       <SitePlugins plugins={site.plugins} />
