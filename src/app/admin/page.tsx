@@ -17,6 +17,7 @@ import { getTheme } from "@/lib/themes";
 import { AdminSiteActions } from "./site-actions";
 import { OwnerLookup } from "./owner-lookup";
 import { EvidenceExport } from "./evidence-export";
+import { ReportActions } from "./report-actions";
 
 /**
  * Platform admin.
@@ -72,15 +73,18 @@ export default async function AdminPage() {
       reason: reports.reason,
       detail: reports.detail,
       createdAt: reports.createdAt,
+      status: reports.status,
       subdomain: sql<string>`coalesce(${sites.subdomain}, ${reports.siteSubdomain}, 'unknown')`,
       siteName: sql<string>`coalesce(${sites.name}, ${reports.siteName}, 'Deleted site')`,
       ownerId: sql<string>`coalesce(${sites.ownerId}, ${reports.siteOwnerId}, '')`,
     })
     .from(reports)
     .leftJoin(sites, eq(sites.id, reports.siteId))
-    .where(eq(reports.status, "open"))
     .orderBy(desc(reports.createdAt))
     .limit(25);
+
+  const stillOpen = openReports.filter((r) => r.status === "open");
+  const recentlyClosed = openReports.filter((r) => r.status !== "open");
 
   const preserved = await db
     .select()
@@ -109,7 +113,7 @@ export default async function AdminPage() {
     { label: "Live pages", value: livePages },
     { label: "Enquiries", value: enquiryCount },
     { label: "Subscribers", value: subscriberCount },
-    { label: "Open reports", value: openReports.length },
+    { label: "Open reports", value: stillOpen.length },
   ];
 
   return (
@@ -157,14 +161,14 @@ export default async function AdminPage() {
           <h2 className="mb-4 text-lg font-semibold text-slate-100">
             Open reports
           </h2>
-          {openReports.length === 0 ? (
+          {stillOpen.length === 0 ? (
             <p className="text-sm text-slate-400">
               Nothing reported. Every published site carries a report link in
               its footer.
             </p>
           ) : (
             <ul className="flex flex-col gap-3">
-              {openReports.map((r) => (
+              {stillOpen.map((r) => (
                 <li
                   key={r.id}
                   className="rounded-xl border border-amber-400/25 bg-amber-400/5 p-4"
@@ -204,6 +208,7 @@ export default async function AdminPage() {
                         Site deleted — see preserved evidence
                       </span>
                     )}
+                    <ReportActions reportId={r.id} status={r.status} />
                   </div>
                 </li>
               ))}
@@ -314,6 +319,34 @@ export default async function AdminPage() {
             </table>
           </div>
         </div>
+
+        {recentlyClosed.length > 0 ? (
+          <div className="glass-panel border-gradient p-6">
+            <h2 className="mb-1 text-lg font-semibold text-slate-100">
+              Recently closed
+            </h2>
+            <p className="mb-4 text-sm text-slate-400">
+              Nothing is deleted — a closed report stays as evidence, and can be
+              reopened.
+            </p>
+            <ul className="flex flex-col gap-2">
+              {recentlyClosed.map((r) => (
+                <li
+                  key={r.id}
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/[0.02] px-4 py-3 text-sm"
+                >
+                  <span className="min-w-0">
+                    <span className="text-slate-300">{r.siteName}</span>{" "}
+                    <span className="text-slate-500">
+                      ({r.subdomain}) · {r.reason}
+                    </span>
+                  </span>
+                  <ReportActions reportId={r.id} status={r.status} />
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
 
         {preserved.length > 0 ? (
           <div className="glass-panel border-gradient p-6">

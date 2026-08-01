@@ -235,6 +235,48 @@ export async function exportEvidence(
   };
 }
 
+/**
+ * Closes a report, or puts it back.
+ *
+ * Two ways to close one, because they mean different things and you will want
+ * to tell them apart later: "resolved" is a real problem that was acted on,
+ * "dismissed" is a report that turned out to be nothing. Collapsing both into
+ * "closed" would lose the difference between a site that was reported once in
+ * error and one that has a history.
+ *
+ * Nothing is deleted. A closed report stays as evidence — see the reasoning on
+ * the reports table.
+ */
+export async function setReportStatus(formData: FormData) {
+  const adminId = await requireAdmin();
+
+  const reportId = String(formData.get("reportId") || "");
+  const status = String(formData.get("status") || "");
+  if (!["open", "resolved", "dismissed"].includes(status)) {
+    throw new Error("Unknown status.");
+  }
+
+  const db = getDb();
+  const report = await db.query.reports.findFirst({
+    where: eq(reports.id, reportId),
+  });
+  if (!report) throw new Error("Report not found.");
+
+  await db
+    .update(reports)
+    .set({ status })
+    .where(eq(reports.id, reportId));
+
+  await recordAudit({
+    userId: adminId,
+    siteId: report.siteId,
+    action: "admin.report",
+    detail: `${report.siteSubdomain ?? "unknown"} — report marked ${status}`,
+  });
+
+  revalidatePath("/admin");
+}
+
 async function siteSlugs(siteId: string) {
   const db = getDb();
   const rows = await db
