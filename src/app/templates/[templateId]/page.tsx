@@ -61,7 +61,10 @@ export default async function TemplatePreviewPage({
   const current =
     allPages.find((p) => p.slug === (requestedSlug ?? "")) ?? allPages[0];
 
-  const data = withDemoImages(current.data, `preview-${template.id}`);
+  const { data, injected } = withDemoImages(
+    current.data,
+    `preview-${template.id}`,
+  );
   const previewBase = `/templates/${template.id}?page=`;
 
   return (
@@ -109,10 +112,14 @@ export default async function TemplatePreviewPage({
             Use this template
           </Link>
         </div>
-        <p className="border-t border-white/10 bg-black/20 px-6 py-1.5 text-center text-xs text-slate-400">
-          Preview only — photos are placeholders and won&apos;t be added to your
-          site.
-        </p>
+        {/* Only shown when the preview actually filled empty slots. Templates
+            that ship their own photography really do come with it. */}
+        {injected > 0 ? (
+          <p className="border-t border-white/10 bg-black/20 px-6 py-1.5 text-center text-xs text-slate-400">
+            Preview only — photos are placeholders and won&apos;t be added to
+            your site.
+          </p>
+        ) : null}
       </header>
 
       <div

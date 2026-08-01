@@ -1,5 +1,12 @@
 import type { Metadata } from "next";
-import { Outfit, Work_Sans, Space_Grotesk, DM_Sans } from "next/font/google";
+import {
+  Outfit,
+  Work_Sans,
+  Space_Grotesk,
+  DM_Sans,
+  Baloo_2,
+  Nunito,
+} from "next/font/google";
 import "./globals.css";
 
 /**
@@ -36,6 +43,21 @@ const dmSans = DM_Sans({
   preload: false,
 });
 
+// Rounded, friendly pair used by the catering theme.
+const baloo = Baloo_2({
+  variable: "--font-baloo",
+  subsets: ["latin"],
+  weight: ["500", "600", "700", "800"],
+  preload: false,
+});
+
+const nunito = Nunito({
+  variable: "--font-nunito",
+  subsets: ["latin"],
+  weight: ["400", "600", "700", "800", "900"],
+  preload: false,
+});
+
 // Deliberately neutral: this layout is also the shell for published tenant
 // sites, so the default that shows through on any page without its own
 // metadata (a 404, say) must not brand a customer's domain with ours. The
@@ -49,6 +71,8 @@ const fontVariables = [
   workSans.variable,
   spaceGrotesk.variable,
   dmSans.variable,
+  baloo.variable,
+  nunito.variable,
 ].join(" ");
 
 export default function RootLayout({

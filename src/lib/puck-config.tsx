@@ -73,6 +73,30 @@ type Components = {
     backgroundImage: string;
     buttonLabel: string;
     buttonHref: string;
+    // Optional extras. Content saved before these existed has no value, so
+    // every one of them renders nothing when empty.
+    badge: string;
+    secondaryLabel: string;
+    secondaryHref: string;
+    bullets: string;
+  };
+  MenuGrid: {
+    items: {
+      name: string;
+      description: string;
+      price: string;
+      image: string;
+      badge: string;
+    }[];
+  };
+  Band: {
+    tone: "band" | "accent" | "inverse";
+    eyebrow: string;
+    heading: string;
+    text: string;
+    buttonLabel: string;
+    buttonHref: string;
+    note: string;
   };
   Spacer: { height: "sm" | "md" | "lg" };
   Nav: Record<string, never>;
@@ -297,24 +321,39 @@ export const puckConfig: Config<{ components: Components }> = {
         subheading: { type: "textarea" },
         theme: { type: "select", options: GRADIENT_OPTIONS },
         backgroundImage: { type: "custom", render: ImageUploadField },
+        badge: { type: "text", label: "Badge (optional)" },
         buttonLabel: { type: "text" },
         buttonHref: { type: "text" },
+        secondaryLabel: { type: "text", label: "Second button (optional)" },
+        secondaryHref: { type: "text" },
+        bullets: {
+          type: "text",
+          label: "Points below the buttons (comma separated)",
+        },
       },
       defaultProps: {
         heading: "Your headline goes here",
         subheading: "A short supporting line about your site.",
         theme: "midnight",
         backgroundImage: "",
+        badge: "",
         buttonLabel: "Get started",
         buttonHref: "#",
+        secondaryLabel: "",
+        secondaryHref: "",
+        bullets: "",
       },
       render: ({
         heading,
         subheading,
         theme,
         backgroundImage,
+        badge,
         buttonLabel,
         buttonHref,
+        secondaryLabel,
+        secondaryHref,
+        bullets,
       }) => (
         <section
           className="relative isolate overflow-hidden bg-cover bg-center px-6 py-28 text-white sm:py-36"
@@ -323,23 +362,223 @@ export const puckConfig: Config<{ components: Components }> = {
           {/* Keeps text legible over a busy uploaded photo. */}
           <div className="absolute inset-0 -z-10 bg-gradient-to-b from-black/10 via-transparent to-black/35" />
           <div className="mx-auto flex max-w-3xl flex-col items-center gap-6 text-center">
+            {badge ? (
+              <span className="rounded-pill bg-accent px-4 py-1.5 text-eyebrow font-bold uppercase tracking-[0.12em] text-neutral-900">
+                {badge}
+              </span>
+            ) : null}
             <h1 className="font-display text-h1 font-bold leading-[1.05] tracking-[-0.03em] text-balance drop-shadow-sm">
               {heading}
             </h1>
             <p className="max-w-xl text-lead leading-[1.6] text-white/85">
               {subheading}
             </p>
-            {buttonLabel ? (
-              <a
-                href={buttonHref}
-                className="mt-2 inline-flex items-center rounded-pill bg-white px-8 py-4 font-medium text-neutral-900 shadow-lifted transition duration-200 ease-out hover:-translate-y-0.5"
-              >
-                {buttonLabel}
-              </a>
+            <div className="mt-2 flex flex-wrap items-center justify-center gap-3">
+              {buttonLabel ? (
+                <a
+                  href={buttonHref}
+                  className="inline-flex items-center rounded-pill bg-white px-8 py-4 font-medium text-neutral-900 shadow-lifted transition duration-200 ease-out hover:-translate-y-0.5"
+                >
+                  {buttonLabel}
+                </a>
+              ) : null}
+              {secondaryLabel ? (
+                <a
+                  href={secondaryHref}
+                  className="inline-flex items-center rounded-pill border-2 border-white/60 px-8 py-4 font-medium text-white transition duration-200 ease-out hover:-translate-y-0.5 hover:bg-white/10"
+                >
+                  {secondaryLabel}
+                </a>
+              ) : null}
+            </div>
+            {bullets ? (
+              <ul className="mt-3 flex flex-wrap items-center justify-center gap-x-7 gap-y-2">
+                {bullets
+                  .split(",")
+                  .map((b) => b.trim())
+                  .filter(Boolean)
+                  .map((b, i) => (
+                    <li
+                      key={i}
+                      className="flex items-center gap-2 text-sm font-bold text-white/90"
+                    >
+                      <span aria-hidden className="text-accent">
+                        ●
+                      </span>
+                      {b}
+                    </li>
+                  ))}
+              </ul>
             ) : null}
           </div>
         </section>
       ),
+    },
+    MenuGrid: {
+      fields: {
+        items: {
+          type: "array",
+          arrayFields: {
+            name: { type: "text" },
+            description: { type: "textarea" },
+            price: { type: "text" },
+            image: { type: "custom", render: ImageUploadField },
+            badge: { type: "text", label: "Badge (optional)" },
+          },
+          defaultItemProps: {
+            name: "Dish name",
+            description: "A short line describing the dish.",
+            price: "From £45",
+            image: "",
+            badge: "",
+          },
+          getItemSummary: (item) => item.name || "Item",
+        },
+      },
+      defaultProps: {
+        items: [
+          {
+            name: "Dish name",
+            description: "A short line describing the dish.",
+            price: "From £45",
+            image: "",
+            badge: "Popular",
+          },
+          {
+            name: "Dish name",
+            description: "A short line describing the dish.",
+            price: "From £40",
+            image: "",
+            badge: "",
+          },
+          {
+            name: "Dish name",
+            description: "A short line describing the dish.",
+            price: "From £50",
+            image: "",
+            badge: "",
+          },
+        ],
+      },
+      render: ({ items }) => (
+        <div className={`${SECTION} ${SECTION_Y}`}>
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {items.map((item, i) => (
+              <article
+                key={i}
+                className={`group flex flex-col overflow-hidden ${CARD} ${LIFT}`}
+              >
+                <div className="relative aspect-[4/3] overflow-hidden">
+                  {item.image ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={item.image}
+                      alt={item.name}
+                      className="h-full w-full object-cover transition duration-500 ease-out group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className={`h-full w-full rounded-none ${PLACEHOLDER}`}>
+                      Upload a photo
+                    </div>
+                  )}
+                  {item.badge ? (
+                    <span className="absolute left-3 top-3 rounded-pill bg-accent px-3 py-1 text-eyebrow font-bold uppercase tracking-wider text-neutral-900 shadow-soft">
+                      {item.badge}
+                    </span>
+                  ) : null}
+                </div>
+                <div className="flex flex-1 flex-col gap-1.5 p-5">
+                  <h3 className="font-display text-lead font-bold leading-snug">
+                    {item.name}
+                  </h3>
+                  <p className="flex-1 text-sm leading-[1.6] text-muted">
+                    {item.description}
+                  </p>
+                  {item.price ? (
+                    <p className="mt-2 font-display text-lead font-bold text-accent">
+                      {item.price}
+                    </p>
+                  ) : null}
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      ),
+    },
+    Band: {
+      fields: {
+        tone: {
+          type: "radio",
+          options: [
+            { label: "Brand", value: "band" },
+            { label: "Accent", value: "accent" },
+            { label: "Inverse", value: "inverse" },
+          ],
+        },
+        eyebrow: { type: "text" },
+        heading: { type: "text" },
+        text: { type: "textarea" },
+        buttonLabel: { type: "text" },
+        buttonHref: { type: "text" },
+        note: { type: "text", label: "Line under the button (optional)" },
+      },
+      defaultProps: {
+        tone: "band",
+        eyebrow: "",
+        heading: "A full-width message worth stopping for",
+        text: "One or two lines that earn the click.",
+        buttonLabel: "Get in touch",
+        buttonHref: "#contact",
+        note: "",
+      },
+      render: ({ tone, eyebrow, heading, text, buttonLabel, buttonHref, note }) => {
+        // `band` uses the theme's own band colour where it defines one and
+        // falls back to the accent, so this works in every theme.
+        const background =
+          tone === "accent"
+            ? "var(--site-accent)"
+            : tone === "inverse"
+              ? "var(--site-foreground)"
+              : "var(--site-band, var(--site-accent))";
+        const colour =
+          tone === "inverse" ? "var(--site-background)" : "var(--site-band-on, #fffaf2)";
+
+        return (
+          <section style={{ background, color: colour }}>
+            <div
+              className={`${SECTION} flex flex-wrap items-center justify-between gap-8 py-12 sm:py-16`}
+            >
+              <div className="max-w-xl">
+                {eyebrow ? (
+                  <p className="text-eyebrow font-bold uppercase tracking-[0.14em] opacity-80">
+                    {eyebrow}
+                  </p>
+                ) : null}
+                <h2 className="mt-2 font-display text-h2 font-bold leading-[1.15] tracking-[-0.02em] text-balance">
+                  {heading}
+                </h2>
+                {text ? (
+                  <p className="mt-3 text-lead leading-[1.6] opacity-90">{text}</p>
+                ) : null}
+              </div>
+              <div className="flex min-w-[220px] flex-col items-start gap-3">
+                {buttonLabel ? (
+                  <a
+                    href={buttonHref}
+                    className="inline-flex items-center rounded-pill bg-accent px-7 py-3.5 font-bold text-neutral-900 shadow-soft transition duration-200 ease-out hover:-translate-y-0.5"
+                  >
+                    {buttonLabel}
+                  </a>
+                ) : null}
+                {note ? (
+                  <p className="text-lead font-bold opacity-95">{note}</p>
+                ) : null}
+              </div>
+            </div>
+          </section>
+        );
+      },
     },
     Spacer: {
       fields: {

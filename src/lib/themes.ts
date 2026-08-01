@@ -26,6 +26,8 @@ const FONT = {
   workSans: "var(--font-work-sans)",
   spaceGrotesk: "var(--font-space-grotesk)",
   dmSans: "var(--font-dm-sans)",
+  baloo: "var(--font-baloo)",
+  nunito: "var(--font-nunito)",
 } as const;
 
 export const THEMES: SiteTheme[] = [
@@ -112,6 +114,38 @@ export const THEMES: SiteTheme[] = [
       "--site-shadow-lifted": "0 18px 50px rgba(69, 55, 40, 0.1)",
       "--site-font-display": FONT.dmSans,
       "--site-font-body": FONT.dmSans,
+    },
+  },
+  {
+    // Ported from the B&C Resource design system: deep chocolate brown with
+    // cream and amber gold, rounded shapes and brown-tinted shadows rather
+    // than neutral black ones.
+    id: "catering",
+    name: "Warm hospitality",
+    description:
+      "Chocolate brown, cream and amber gold. Rounded and appetising — built for food and events.",
+    swatch: ["#fbf6ee", "#ffffff", "#d99a3d"],
+    vars: {
+      "--site-background": "#fbf6ee",
+      "--site-foreground": "#2a2017",
+      "--site-surface": "#ffffff",
+      "--site-surface-subtle": "#fdfaf4",
+      "--site-border": "rgba(74, 44, 24, 0.14)",
+      "--site-border-strong": "rgba(74, 44, 24, 0.26)",
+      "--site-muted": "rgba(92, 81, 71, 0.95)",
+      "--site-accent": "#d99a3d",
+      // Generous radii — the original system rounds cards to 20px.
+      "--site-radius-card": "1.25rem",
+      "--site-radius-pill": "999px",
+      // Warm, brown-tinted shadows; never harsh black.
+      "--site-shadow-soft": "0 2px 6px rgba(74, 44, 24, 0.08)",
+      "--site-shadow-raised": "0 8px 20px rgba(74, 44, 24, 0.1)",
+      "--site-shadow-lifted": "0 16px 40px rgba(74, 44, 24, 0.14)",
+      // Deep emerald, used by the Band block for the events strip.
+      "--site-band": "#14573a",
+      "--site-band-on": "#fdfaf4",
+      "--site-font-display": FONT.baloo,
+      "--site-font-body": FONT.nunito,
     },
   },
 ];

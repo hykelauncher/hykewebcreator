@@ -157,6 +157,59 @@ function faq(id: string, items: { question: string; answer: string }[]) {
   return { type: "FAQAccordion" as const, props: { id, items } };
 }
 
+/** Photography ported from the B&C Resource design system (see public/templates/catering). */
+const CATERING_IMG = "/templates/catering";
+
+function cateringHero(props: {
+  id: string;
+  badge: string;
+  heading: string;
+  subheading: string;
+  buttonLabel: string;
+  buttonHref: string;
+  secondaryLabel: string;
+  secondaryHref: string;
+  bullets: string;
+  backgroundImage?: string;
+}) {
+  return {
+    type: "Hero" as const,
+    props: { theme: "midnight" as GradientTheme, backgroundImage: "", ...props },
+  };
+}
+
+function menuGrid(
+  id: string,
+  items: {
+    name: string;
+    description: string;
+    price: string;
+    image: string;
+    badge?: string;
+  }[],
+) {
+  return {
+    type: "MenuGrid" as const,
+    props: { id, items: items.map((i) => ({ badge: "", ...i })) },
+  };
+}
+
+function band(props: {
+  id: string;
+  tone?: "band" | "accent" | "inverse";
+  eyebrow: string;
+  heading: string;
+  text: string;
+  buttonLabel: string;
+  buttonHref: string;
+  note?: string;
+}) {
+  return {
+    type: "Band" as const,
+    props: { tone: "band" as const, note: "", ...props },
+  };
+}
+
 function pricing(id: string) {
   return {
     type: "PricingTable" as const,
@@ -853,6 +906,295 @@ export const TEMPLATES: Template[] = [
             ),
             image("warmabout-image", "portrait", ""),
             spacer("warmabout-sp", "lg"),
+          ],
+        },
+      },
+    ],
+  },
+  {
+    // Ported from the B&C Resource design system: chocolate brown and cream
+    // with amber gold, an emerald events band, and rounded appetising cards.
+    // Photography and menu content come from that project.
+    id: "catering",
+    name: "Catering & events",
+    description:
+      "Warm brown and cream. Menu grid, events band and quote form — built for caterers.",
+    theme: "sunset",
+    themeId: "catering",
+    data: {
+      root: {
+        props: {
+          title: "Home",
+          metaDescription:
+            "Home-cooked Nigerian catering by the tray for weddings, parties and corporate events.",
+        },
+      },
+      content: [
+        nav("cat-nav"),
+        cateringHero({
+          id: "cat-hero",
+          badge: "Authentic Nigerian Cuisine",
+          heading: "Great taste, for your occasion.",
+          subheading:
+            "Home-cooked Nigerian soups, rice, proteins and small chops — catered by the tray for weddings, parties and corporate events.",
+          buttonLabel: "Browse the menu",
+          buttonHref: "/menu",
+          secondaryLabel: "Plan an event",
+          secondaryHref: "/events",
+          bullets:
+            "Cooked fresh to order, Weddings · parties · corporate, Great taste, excellent service",
+          backgroundImage: `${CATERING_IMG}/hero.webp`,
+        }),
+        headingAt("cat-menu-eyebrow", "Our menu", "h2"),
+        textAt(
+          "cat-menu-intro",
+          "Soups & stews, rice, proteins and more — choose a tray size and add to your order. Custom packages available on request.",
+        ),
+        menuGrid("cat-menu", [
+          {
+            name: "Egusi Soup",
+            description:
+              "Rich melon-seed soup with assorted meat and leafy veg.",
+            price: "From £45",
+            image: `${CATERING_IMG}/egusi.webp`,
+            badge: "Popular",
+          },
+          {
+            name: "Jollof Rice",
+            description: "Smoky party jollof in a rich tomato and pepper base.",
+            price: "From £40",
+            image: `${CATERING_IMG}/jollof.webp`,
+            badge: "Popular",
+          },
+          {
+            name: "Fried Rice",
+            description: "Seasoned fried rice with liver, peas and mixed veg.",
+            price: "From £45",
+            image: `${CATERING_IMG}/friedrice.webp`,
+          },
+          {
+            name: "Peppered Chicken",
+            description: "Grilled chicken tossed in a peppered sauce.",
+            price: "From £50",
+            image: `${CATERING_IMG}/peppered_chicken.webp`,
+          },
+          {
+            name: "Ofada Rice",
+            description: "Local rice served with rich ayamase pepper sauce.",
+            price: "From £50",
+            image: `${CATERING_IMG}/ofada.webp`,
+          },
+          {
+            name: "Moi Moi",
+            description: "Steamed bean pudding, soft and lightly spiced.",
+            price: "From £35",
+            image: `${CATERING_IMG}/moimoi.webp`,
+          },
+        ]),
+        band({
+          id: "cat-events-band",
+          eyebrow: "We cater for all events",
+          heading: "Weddings, birthdays, corporate & private parties",
+          text: "Tell us your headcount and date — we'll build a custom package and bring great taste to your occasion.",
+          buttonLabel: "Request a quote",
+          buttonHref: "/events",
+          note: "Call us on 000 0000 0000",
+        }),
+        spacer("cat-sp-1", "md"),
+        headingAt("cat-why", "Why choose us", "h2"),
+        stats("cat-stats", [
+          { value: "Fresh", label: "Cooked to order" },
+          { value: "By the tray", label: "2L · 4L · 5L" },
+          { value: "UK-wide", label: "Delivery & setup" },
+        ]),
+        spacer("cat-sp-2", "lg"),
+      ],
+    },
+    pages: [
+      {
+        slug: "menu",
+        title: "Menu",
+        data: {
+          root: {
+            props: {
+              title: "Menu",
+              metaDescription:
+                "Soups and stews, rice dishes, proteins, sides and small chops — by the tray.",
+            },
+          },
+          content: [
+            nav("catmenu-nav"),
+            spacer("catmenu-sp-0", "md"),
+            headingAt("catmenu-heading", "Order by the tray", "h1"),
+            textAt(
+              "catmenu-intro",
+              "Every dish comes in 2L, 4L and 5L trays. Prices shown are a starting point — tell us your headcount and we'll confirm.",
+            ),
+            headingAt("catmenu-soups", "Soups & stews", "h3"),
+            menuGrid("catmenu-soups-grid", [
+              {
+                name: "Egusi Soup",
+                description:
+                  "Rich melon-seed soup with assorted meat and leafy veg.",
+                price: "From £45",
+                image: `${CATERING_IMG}/egusi.webp`,
+                badge: "Popular",
+              },
+              {
+                name: "Goat Meat",
+                description: "Tender goat, slow-cooked and richly seasoned.",
+                price: "From £60",
+                image: `${CATERING_IMG}/goat.webp`,
+              },
+              {
+                name: "Peppered Chicken",
+                description: "Grilled chicken tossed in a peppered sauce.",
+                price: "From £50",
+                image: `${CATERING_IMG}/peppered_chicken.webp`,
+              },
+            ]),
+            headingAt("catmenu-rice", "Rice dishes", "h3"),
+            menuGrid("catmenu-rice-grid", [
+              {
+                name: "Jollof Rice",
+                description:
+                  "Smoky party jollof in a rich tomato and pepper base.",
+                price: "From £40",
+                image: `${CATERING_IMG}/jollof.webp`,
+                badge: "Popular",
+              },
+              {
+                name: "Fried Rice",
+                description:
+                  "Seasoned fried rice with liver, peas and mixed veg.",
+                price: "From £45",
+                image: `${CATERING_IMG}/friedrice.webp`,
+              },
+              {
+                name: "Ofada Rice",
+                description:
+                  "Local rice served with rich ayamase pepper sauce.",
+                price: "From £50",
+                image: `${CATERING_IMG}/ofada.webp`,
+              },
+            ]),
+            headingAt("catmenu-sides", "Sides & extras", "h3"),
+            menuGrid("catmenu-sides-grid", [
+              {
+                name: "Moi Moi",
+                description: "Steamed bean pudding, soft and lightly spiced.",
+                price: "From £35",
+                image: `${CATERING_IMG}/moimoi.webp`,
+              },
+              {
+                name: "Fried Plantain",
+                description: "Sweet ripe plantain, fried golden.",
+                price: "From £30",
+                image: `${CATERING_IMG}/plantain.webp`,
+              },
+              {
+                name: "Chicken",
+                description: "Seasoned and grilled, by the tray.",
+                price: "From £50",
+                image: `${CATERING_IMG}/chicken.webp`,
+              },
+            ]),
+            band({
+              id: "catmenu-band",
+              tone: "accent",
+              eyebrow: "Not sure what you need?",
+              heading: "We'll build a package around your headcount",
+              text: "Send us the date and numbers and we'll come back with a quote.",
+              buttonLabel: "Request a quote",
+              buttonHref: "/events",
+            }),
+            spacer("catmenu-sp-1", "lg"),
+          ],
+        },
+      },
+      {
+        slug: "events",
+        title: "Events",
+        data: {
+          root: {
+            props: {
+              title: "Events",
+              metaDescription:
+                "Catering for weddings, birthdays, corporate and private parties.",
+            },
+          },
+          content: [
+            nav("catev-nav"),
+            band({
+              id: "catev-hero",
+              eyebrow: "Events & catering",
+              heading: "Let us cater your next occasion.",
+              text: "Tell us the date, the headcount and the kind of event, and we'll put together a package.",
+              buttonLabel: "Call us",
+              buttonHref: "tel:00000000000",
+              note: "000 0000 0000",
+            }),
+            spacer("catev-sp-0", "md"),
+            headingAt("catev-heading", "What we cater", "h2"),
+            stats("catev-stats", [
+              { value: "Weddings", label: "Full-day service" },
+              { value: "Corporate", label: "Office & conference" },
+              { value: "Private", label: "Birthdays & naming" },
+            ]),
+            headingAt("catev-how", "How it works", "h3"),
+            faq("catev-faq", [
+              {
+                question: "How far in advance should I book?",
+                answer:
+                  "Two to three weeks is comfortable for most events. Get in touch sooner for large weddings.",
+              },
+              {
+                question: "Do you deliver and set up?",
+                answer:
+                  "Yes — tell us the venue and access times and we'll handle delivery and setup.",
+              },
+              {
+                question: "Can you build a custom package?",
+                answer:
+                  "That's most of what we do. Send your headcount and preferences and we'll price it up.",
+              },
+            ]),
+            spacer("catev-sp-1", "lg"),
+          ],
+        },
+      },
+      {
+        slug: "contact",
+        title: "Contact",
+        data: {
+          root: {
+            props: {
+              title: "Contact",
+              metaDescription: "Get in touch about catering for your event.",
+            },
+          },
+          content: [
+            nav("catcon-nav"),
+            spacer("catcon-sp-0", "md"),
+            headingAt("catcon-heading", "We'd love to hear from you.", "h1"),
+            textAt(
+              "catcon-text",
+              "Call, message or email — whichever is easiest. Tell us your date, headcount and venue and we'll come straight back to you.",
+            ),
+            buttonAt("catcon-call", "Call 000 0000 0000", "tel:00000000000"),
+            buttonAt(
+              "catcon-email",
+              "hello@example.com",
+              "mailto:hello@example.com",
+              "outline",
+            ),
+            spacer("catcon-sp-1", "md"),
+            headingAt("catcon-hours", "Opening hours", "h3"),
+            textAt(
+              "catcon-hours-text",
+              "Monday to Saturday, 9am — 7pm\nSunday, by arrangement",
+            ),
+            spacer("catcon-sp-2", "lg"),
           ],
         },
       },

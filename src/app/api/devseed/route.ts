@@ -44,7 +44,7 @@ async function seedTemplate(template: Template) {
     .returning();
 
   const now = new Date();
-  const home = withDemoImages(template.data, subdomain);
+  const { data: home } = withDemoImages(template.data, subdomain);
   const rows = [
     {
       siteId: site.id,
@@ -57,7 +57,7 @@ async function seedTemplate(template: Template) {
       publishedAt: now,
     },
     ...(template.pages ?? []).map((page, index) => {
-      const data = withDemoImages(page.data, subdomain);
+      const { data } = withDemoImages(page.data, subdomain);
       return {
         siteId: site.id,
         slug: page.slug,

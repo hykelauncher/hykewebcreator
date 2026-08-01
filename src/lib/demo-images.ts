@@ -17,14 +17,25 @@ function demoPhoto(seed: string, w: number, h: number): string {
 type Block = { type: string; props: Record<string, unknown> };
 
 /**
- * Returns a copy of the page data with empty image fields filled. Keyed off
- * the block id, so a given slot keeps the same picture between renders rather
- * than flickering to a new photo on every request.
+ * Returns a copy of the page data with empty image fields filled, and a count
+ * of how many were filled. Keyed off the block id, so a given slot keeps the
+ * same picture between renders rather than flickering on every request.
+ *
+ * The count matters: a template that ships its own photography (the catering
+ * one does) needs nothing injected, and telling someone its pictures are
+ * placeholders would be wrong — they're part of what they'd get.
  */
 export function withDemoImages(
   data: Template["data"],
   prefix: string,
-): Template["data"] {
+): { data: Template["data"]; injected: number } {
+  let injected = 0;
+  const fill = (value: unknown, url: string) => {
+    if (value) return value;
+    injected += 1;
+    return url;
+  };
+
   const content = (data.content as unknown as Block[]).map((block) => {
     const id = String(block.props.id ?? "");
     const seed = `${prefix}-${id}`;
@@ -39,40 +50,47 @@ export function withDemoImages(
             : ratio === "square"
               ? [1000, 1000]
               : [1600, 900];
-        if (!props.src) props.src = demoPhoto(seed, w, h);
+        props.src = fill(props.src, demoPhoto(seed, w, h));
         break;
       }
       case "ProfileHero":
-        if (!props.photo) props.photo = demoPhoto(seed, 1000, 1000);
+        props.photo = fill(props.photo, demoPhoto(seed, 1000, 1000));
         break;
       case "ProjectCard":
-        if (!props.image) props.image = demoPhoto(seed, 1200, 800);
+        props.image = fill(props.image, demoPhoto(seed, 1200, 800));
         break;
       case "Testimonial":
-        if (!props.avatar) props.avatar = demoPhoto(`${seed}-avatar`, 200, 200);
+        props.avatar = fill(props.avatar, demoPhoto(`${seed}-avatar`, 200, 200));
         break;
       case "Gallery": {
         const images = props.images as
           | { src: string; alt: string }[]
           | undefined;
         if (Array.isArray(images)) {
-          props.images = images.map((image, i) =>
-            image.src
-              ? image
-              : { ...image, src: demoPhoto(`${seed}-${i}`, 800, 800) },
-          );
+          props.images = images.map((image, i) => ({
+            ...image,
+            src: fill(image.src, demoPhoto(`${seed}-${i}`, 800, 800)) as string,
+          }));
+        }
+        break;
+      }
+      case "MenuGrid": {
+        const items = props.items as { image: string }[] | undefined;
+        if (Array.isArray(items)) {
+          props.items = items.map((item, i) => ({
+            ...item,
+            image: fill(item.image, demoPhoto(`${seed}-${i}`, 800, 600)) as string,
+          }));
         }
         break;
       }
       case "Hero":
-        if (!props.backgroundImage) {
-          props.backgroundImage = demoPhoto(seed, 1600, 900);
-        }
+        props.backgroundImage = fill(props.backgroundImage, demoPhoto(seed, 1600, 900));
         break;
     }
 
     return { ...block, props };
   });
 
-  return { ...data, content } as Template["data"];
+  return { data: { ...data, content } as Template["data"], injected };
 }
