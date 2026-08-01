@@ -147,6 +147,47 @@ export const PLUGINS: PluginDefinition[] = [
     },
   },
   {
+    id: "shop",
+    name: "Shopping bag",
+    description:
+      "Adds a bag to product cards. Orders are sent to you as a message or on WhatsApp — no card payments, nothing charged on the site.",
+    fields: [
+      {
+        name: "currency",
+        label: "Currency symbol",
+        type: "text",
+        placeholder: "£",
+        required: true,
+      },
+      {
+        name: "method",
+        label: "How orders reach you",
+        type: "select",
+        options: [
+          { label: "Message and WhatsApp", value: "both" },
+          { label: "Message to my dashboard", value: "message" },
+          { label: "WhatsApp only", value: "whatsapp" },
+        ],
+        help: "WhatsApp options need the WhatsApp plugin turned on as well.",
+      },
+      {
+        name: "note",
+        label: "Note shown in the bag",
+        type: "textarea",
+        placeholder:
+          "Send your order and we'll confirm availability and payment.",
+      },
+    ],
+    parse: (input) => {
+      const currency = (input.currency ?? "£").trim().slice(0, 3);
+      if (!currency) return null;
+      const method = ["both", "message", "whatsapp"].includes(input.method ?? "")
+        ? (input.method as string)
+        : "both";
+      return { currency, method, note: (input.note ?? "").slice(0, 240) };
+    },
+  },
+  {
     id: "social",
     name: "Social links",
     description:

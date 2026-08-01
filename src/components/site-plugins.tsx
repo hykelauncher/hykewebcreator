@@ -1,5 +1,6 @@
 import Script from "next/script";
 import { readPluginConfig } from "@/lib/plugins";
+import { CartDrawer } from "@/components/cart-drawer";
 
 /**
  * Renders a published site's enabled plugins.
@@ -46,9 +47,17 @@ export function SitePlugins({ plugins }: { plugins: unknown }) {
   const social = readPluginConfig(plugins, "social");
   const analytics = readPluginConfig(plugins, "analytics");
 
+  const shop = readPluginConfig(plugins, "shop");
+
   const socialLinks = social
     ? Object.entries(social).filter(([, url]) => Boolean(url))
     : [];
+
+  const whatsappUrl = whatsapp
+    ? `https://wa.me/${whatsapp.phone}${
+        whatsapp.message ? `?text=${encodeURIComponent(whatsapp.message)}` : ""
+      }`
+    : null;
 
   return (
     <>
@@ -120,6 +129,15 @@ export function SitePlugins({ plugins }: { plugins: unknown }) {
             </a>
           ) : null}
         </div>
+      ) : null}
+
+      {shop ? (
+        <CartDrawer
+          currency={shop.currency}
+          method={shop.method as "message" | "whatsapp" | "both"}
+          whatsappUrl={whatsappUrl}
+          note={shop.note}
+        />
       ) : null}
 
       {analytics?.provider === "plausible" ? (

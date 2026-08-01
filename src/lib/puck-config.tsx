@@ -2,6 +2,7 @@ import type { Config, Slot } from "@puckeditor/core";
 import { ImageUploadField } from "@/components/image-upload-field";
 import { EnquiryForm, type EnquiryField } from "@/components/enquiry-form";
 import { NewsletterForm } from "@/components/newsletter-form";
+import { AddToBag } from "@/components/add-to-bag";
 import {
   GRADIENT_OPTIONS,
   GRADIENTS,
@@ -637,7 +638,11 @@ export const puckConfig: Config<{ components: Components }> = {
           href: "#",
         })),
       },
-      render: ({ columns, items }) => (
+      render: ({ columns, items, puck }) => {
+        // Only shown when the shop plugin is on, so a product grid used purely
+        // as a lookbook doesn't sprout buttons that lead nowhere.
+        const shopEnabled = puck?.metadata?.shopEnabled === true;
+        return (
         <div className={`${SECTION} ${SECTION_Y}`}>
           <div
             className={`grid gap-x-6 gap-y-10 ${
@@ -680,11 +685,19 @@ export const puckConfig: Config<{ components: Components }> = {
                     </span>
                   ) : null}
                 </p>
+                {shopEnabled ? (
+                  <AddToBag
+                    name={item.name}
+                    price={item.price}
+                    image={item.image}
+                  />
+                ) : null}
               </a>
             ))}
           </div>
         </div>
-      ),
+        );
+      },
     },
     CategoryTiles: {
       fields: {

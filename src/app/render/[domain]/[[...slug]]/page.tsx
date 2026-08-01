@@ -103,6 +103,7 @@ export default async function TenantSitePage({
     .orderBy(asc(pages.sortOrder), asc(pages.createdAt));
 
   const whatsapp = readPluginConfig(site.plugins, "whatsapp");
+  const shop = readPluginConfig(site.plugins, "shop");
 
   // `data-theme` both carries the palette and opts the site out of the
   // OS-driven dark mode that only the default theme responds to.
@@ -124,6 +125,8 @@ export default async function TenantSitePage({
                   : ""
               }`
             : undefined,
+          // Product cards only offer a bag when the shop plugin is on.
+          shopEnabled: shop !== null,
         }}
       />
       {/* Site-wide add-ons, outside the page content so they apply everywhere. */}
