@@ -30,11 +30,22 @@ export function resolveTenantHost(hostHeader: string): string | null {
   return host;
 }
 
+/**
+ * The address a site is actually reachable at. An unverified custom domain is
+ * ignored — nothing is served on it (see `/render`), so linking there would
+ * send the owner to someone else's server or a dead host.
+ */
 export function getSiteUrl(site: {
   subdomain: string;
   customDomain?: string | null;
+  customDomainVerified?: boolean;
 }): string {
   const protocol = ROOT_DOMAIN === "localhost" ? "http" : "https";
-  const host = site.customDomain || `${site.subdomain}.${ROOT_DOMAIN_WITH_PORT}`;
+  const useCustomDomain = Boolean(
+    site.customDomain && site.customDomainVerified,
+  );
+  const host = useCustomDomain
+    ? site.customDomain!
+    : `${site.subdomain}.${ROOT_DOMAIN_WITH_PORT}`;
   return `${protocol}://${host}`;
 }

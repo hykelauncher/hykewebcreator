@@ -22,6 +22,9 @@ export async function POST(request: Request): Promise<NextResponse> {
             "image/gif",
             "image/svg+xml",
           ],
+          // Without a cap, one signed token is an open door to the storage
+          // bill. Generous enough for a hero image, small enough to hurt.
+          maximumSizeInBytes: 8 * 1024 * 1024,
           addRandomSuffix: true,
         };
       },

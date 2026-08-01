@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { upload } from "@vercel/blob/client";
+import { recordAsset } from "@/app/actions/assets";
+import { useSiteId } from "@/components/site-context";
 
 export function ImageUploadField({
   value,
@@ -10,6 +12,7 @@ export function ImageUploadField({
   value: string;
   onChange: (value: string) => void;
 }) {
+  const siteId = useSiteId();
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -22,6 +25,22 @@ export function ImageUploadField({
         handleUploadUrl: "/api/upload",
       });
       onChange(blob.url);
+
+      // Track it so the site's storage can be cleaned up when it's deleted.
+      // Failing to record shouldn't lose the user their upload.
+      if (siteId) {
+        try {
+          await recordAsset({
+            siteId,
+            url: blob.url,
+            pathname: blob.pathname,
+            contentType: file.type || null,
+            size: file.size,
+          });
+        } catch {
+          // non-fatal
+        }
+      }
     } catch {
       setError("Upload failed. Try a different image.");
     } finally {
