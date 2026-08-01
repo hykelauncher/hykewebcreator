@@ -1,5 +1,6 @@
 import type { Config, Slot } from "@puckeditor/core";
 import { ImageUploadField } from "@/components/image-upload-field";
+import { EnquiryForm, type EnquiryField } from "@/components/enquiry-form";
 import {
   GRADIENT_OPTIONS,
   GRADIENTS,
@@ -88,6 +89,16 @@ type Components = {
       image: string;
       badge: string;
     }[];
+  };
+  EnquiryForm: {
+    heading: string;
+    description: string;
+    askName: "yes" | "no";
+    askEmail: "yes" | "no";
+    askPhone: "yes" | "no";
+    askSubject: "yes" | "no";
+    buttonLabel: string;
+    successMessage: string;
   };
   Band: {
     tone: "band" | "accent" | "inverse";
@@ -505,6 +516,101 @@ export const puckConfig: Config<{ components: Components }> = {
           </div>
         </div>
       ),
+    },
+    EnquiryForm: {
+      fields: {
+        heading: { type: "text" },
+        description: { type: "textarea" },
+        askName: {
+          type: "radio",
+          label: "Ask for a name",
+          options: [
+            { label: "Yes", value: "yes" },
+            { label: "No", value: "no" },
+          ],
+        },
+        askEmail: {
+          type: "radio",
+          label: "Ask for an email",
+          options: [
+            { label: "Yes", value: "yes" },
+            { label: "No", value: "no" },
+          ],
+        },
+        askPhone: {
+          type: "radio",
+          label: "Ask for a phone number",
+          options: [
+            { label: "Yes", value: "yes" },
+            { label: "No", value: "no" },
+          ],
+        },
+        askSubject: {
+          type: "radio",
+          label: "Ask for a subject",
+          options: [
+            { label: "Yes", value: "yes" },
+            { label: "No", value: "no" },
+          ],
+        },
+        buttonLabel: { type: "text" },
+        successMessage: { type: "text" },
+      },
+      defaultProps: {
+        heading: "Send us a message",
+        description:
+          "Tell us what you need and we'll come back to you.",
+        askName: "yes",
+        askEmail: "yes",
+        askPhone: "no",
+        askSubject: "no",
+        buttonLabel: "Send enquiry",
+        successMessage: "Thanks — we've got your message and will be in touch.",
+      },
+      render: ({
+        heading,
+        description,
+        askName,
+        askEmail,
+        askPhone,
+        askSubject,
+        buttonLabel,
+        successMessage,
+        puck,
+      }) => {
+        // Anything saved before a field existed reads as undefined, so each
+        // one opts out only on an explicit "no".
+        const fields: EnquiryField[] = [
+          ...(askName !== "no" ? (["name"] as const) : []),
+          ...(askEmail !== "no" ? (["email"] as const) : []),
+          ...(askPhone === "yes" ? (["phone"] as const) : []),
+          ...(askSubject === "yes" ? (["subject"] as const) : []),
+        ];
+        const pageSlug = (puck?.metadata?.currentSlug as string) ?? "";
+
+        return (
+          <div className={`${SECTION} ${SECTION_Y}`}>
+            <div className={`${CARD} max-w-2xl p-7 sm:p-9`}>
+              {heading ? (
+                <h2 className="font-display text-h3 font-bold tracking-[-0.01em]">
+                  {heading}
+                </h2>
+              ) : null}
+              {description ? (
+                <p className="mt-2 mb-6 leading-[1.7] text-muted">
+                  {description}
+                </p>
+              ) : null}
+              <EnquiryForm
+                fields={fields}
+                buttonLabel={buttonLabel}
+                successMessage={successMessage}
+                pageSlug={pageSlug}
+              />
+            </div>
+          </div>
+        );
+      },
     },
     Band: {
       fields: {

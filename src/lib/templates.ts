@@ -210,6 +210,27 @@ function band(props: {
   };
 }
 
+function enquiryForm(props: {
+  id: string;
+  heading: string;
+  description: string;
+  askPhone?: "yes" | "no";
+  askSubject?: "yes" | "no";
+  buttonLabel: string;
+  successMessage: string;
+}) {
+  return {
+    type: "EnquiryForm" as const,
+    props: {
+      askName: "yes" as const,
+      askEmail: "yes" as const,
+      askPhone: "no" as const,
+      askSubject: "no" as const,
+      ...props,
+    },
+  };
+}
+
 function pricing(id: string) {
   return {
     type: "PricingTable" as const,
@@ -1294,6 +1315,18 @@ export const TEMPLATES: Template[] = [
                   "That's most of what we do. Send your headcount and preferences and we'll price it up.",
               },
             ]),
+            headingAt("catev-quote", "Request a quote", "h2"),
+            enquiryForm({
+              id: "catev-form",
+              heading: "Tell us about your event",
+              description:
+                "Date, headcount, venue and anything you already know about the menu — we'll come back with a package and a price.",
+              askPhone: "yes",
+              askSubject: "yes",
+              buttonLabel: "Request a quote",
+              successMessage:
+                "Thanks — we've got your request and will be in touch shortly.",
+            }),
             spacer("catev-sp-1", "lg"),
           ],
         },
@@ -1324,6 +1357,16 @@ export const TEMPLATES: Template[] = [
               "outline",
             ),
             spacer("catcon-sp-1", "md"),
+            enquiryForm({
+              id: "catcon-form",
+              heading: "Send us a message",
+              description:
+                "Prefer to write? Leave your details and we'll reply.",
+              askPhone: "yes",
+              buttonLabel: "Send message",
+              successMessage: "Thanks — we'll be in touch soon.",
+            }),
+            spacer("catcon-sp-form", "md"),
             headingAt("catcon-hours", "Opening hours", "h3"),
             textAt(
               "catcon-hours-text",

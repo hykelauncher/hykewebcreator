@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { del } from "@vercel/blob";
 import { and, asc, eq } from "drizzle-orm";
 import { getDb } from "@/db";
-import { assets, pages, sites } from "@/db/schema";
+import { assets, enquiries, pages, sites } from "@/db/schema";
 import { revalidateSite } from "@/lib/publish";
 import { THEMES } from "@/lib/themes";
 import {
@@ -269,6 +269,42 @@ export async function updateFavicon(siteId: string, faviconUrl: string) {
     .where(eq(sites.id, site.id));
 
   revalidateSite(site, await siteSlugs(site.id));
+  revalidatePath(`/dashboard/${siteId}`);
+}
+
+export async function setEnquiryHandled(formData: FormData) {
+  const userId = await requireAuth();
+
+  const siteId = String(formData.get("siteId") || "");
+  const enquiryId = String(formData.get("enquiryId") || "");
+  await requireOwnedSite(siteId, userId);
+
+  const db = getDb();
+  const enquiry = await db.query.enquiries.findFirst({
+    where: and(eq(enquiries.id, enquiryId), eq(enquiries.siteId, siteId)),
+  });
+  if (!enquiry) throw new Error("Enquiry not found");
+
+  await db
+    .update(enquiries)
+    .set({ handled: !enquiry.handled })
+    .where(eq(enquiries.id, enquiryId));
+
+  revalidatePath(`/dashboard/${siteId}`);
+}
+
+export async function deleteEnquiry(formData: FormData) {
+  const userId = await requireAuth();
+
+  const siteId = String(formData.get("siteId") || "");
+  const enquiryId = String(formData.get("enquiryId") || "");
+  await requireOwnedSite(siteId, userId);
+
+  const db = getDb();
+  await db
+    .delete(enquiries)
+    .where(and(eq(enquiries.id, enquiryId), eq(enquiries.siteId, siteId)));
+
   revalidatePath(`/dashboard/${siteId}`);
 }
 

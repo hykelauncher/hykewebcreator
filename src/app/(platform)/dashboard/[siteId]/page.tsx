@@ -1,9 +1,9 @@
 import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 import { getDb } from "@/db";
-import { pages, sites } from "@/db/schema";
+import { enquiries, pages, sites } from "@/db/schema";
 import { getSiteUrl } from "@/lib/tenant";
 import { verificationRecordName } from "@/lib/domain";
 import { DomainForm } from "./domain-form";
@@ -11,6 +11,7 @@ import { PagesManager } from "./pages-manager";
 import { FaviconForm } from "./favicon-form";
 import { ThemeForm } from "./theme-form";
 import { SiteDangerZone } from "./site-danger-zone";
+import { EnquiriesList } from "./enquiries-list";
 
 export default async function SiteSettingsPage({
   params,
@@ -32,6 +33,15 @@ export default async function SiteSettingsPage({
     .from(pages)
     .where(eq(pages.siteId, siteId))
     .orderBy(asc(pages.sortOrder), asc(pages.createdAt));
+
+  const siteEnquiries = await db
+    .select()
+    .from(enquiries)
+    .where(eq(enquiries.siteId, siteId))
+    .orderBy(desc(enquiries.createdAt))
+    .limit(50);
+
+  const unhandled = siteEnquiries.filter((e) => !e.handled).length;
 
   return (
     <main className="min-h-screen flex-1 bg-[#020617] bg-[radial-gradient(circle_at_15%_0%,rgba(96,165,250,0.14),transparent_45%),radial-gradient(circle_at_85%_20%,rgba(168,85,247,0.12),transparent_40%)]">
@@ -70,6 +80,18 @@ export default async function SiteSettingsPage({
               publishedAt: page.publishedAt,
             }))}
           />
+        </div>
+
+        <div className="glass-panel border-gradient p-6">
+          <div className="mb-4 flex items-center gap-3">
+            <h2 className="text-lg font-semibold text-slate-100">Enquiries</h2>
+            {unhandled > 0 ? (
+              <span className="rounded-full bg-blue-500/20 px-2.5 py-1 text-xs font-medium text-blue-200">
+                {unhandled} new
+              </span>
+            ) : null}
+          </div>
+          <EnquiriesList siteId={site.id} enquiries={siteEnquiries} />
         </div>
 
         <div className="glass-panel border-gradient p-6">

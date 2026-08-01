@@ -71,6 +71,30 @@ export const pages = pgTable(
   (table) => [uniqueIndex("pages_site_slug_idx").on(table.siteId, table.slug)],
 );
 
+/**
+ * Enquiries submitted through a published site's form block.
+ *
+ * Deliberately loose about shape: a form is configurable per block, so only
+ * `message` is guaranteed. `pageSlug` records where it came from, which
+ * matters once a site has several forms.
+ */
+export const enquiries = pgTable("enquiries", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  siteId: uuid("site_id")
+    .notNull()
+    .references(() => sites.id, { onDelete: "cascade" }),
+  name: text("name"),
+  email: text("email"),
+  phone: text("phone"),
+  subject: text("subject"),
+  message: text("message").notNull(),
+  pageSlug: text("page_slug").notNull().default(""),
+  handled: boolean("handled").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 export const assets = pgTable("assets", {
   id: uuid("id").primaryKey().defaultRandom(),
   siteId: uuid("site_id")
@@ -88,6 +112,11 @@ export const assets = pgTable("assets", {
 export const sitesRelations = relations(sites, ({ many }) => ({
   pages: many(pages),
   assets: many(assets),
+  enquiries: many(enquiries),
+}));
+
+export const enquiriesRelations = relations(enquiries, ({ one }) => ({
+  site: one(sites, { fields: [enquiries.siteId], references: [sites.id] }),
 }));
 
 export const pagesRelations = relations(pages, ({ one }) => ({
