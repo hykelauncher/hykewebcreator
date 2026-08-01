@@ -3,7 +3,13 @@ import { NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import { pages, sites } from "@/db/schema";
+import { extractPageMeta, parsePuckData } from "@/lib/puck-data";
 
+/**
+ * Draft autosave. This only ever writes `pages.content` — the draft column —
+ * so nothing a visitor sees changes until the owner hits Publish (see
+ * `publishPage` in the editor's actions).
+ */
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ pageId: string }> },
@@ -14,7 +20,18 @@ export async function PUT(
   }
 
   const { pageId } = await params;
-  const { content } = await request.json();
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
+  }
+
+  const parsed = parsePuckData((body as { content?: unknown })?.content);
+  if (!parsed.ok) {
+    return NextResponse.json({ error: parsed.error }, { status: 400 });
+  }
 
   const db = getDb();
   const page = await db.query.pages.findFirst({
@@ -31,17 +48,17 @@ export async function PUT(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  const { title, metaDescription } = extractPageMeta(parsed.data);
+
   await db
     .update(pages)
-    .set({ content, updatedAt: new Date() })
+    .set({
+      content: parsed.data,
+      title: title ?? page.title,
+      metaDescription,
+      updatedAt: new Date(),
+    })
     .where(eq(pages.id, pageId));
 
-  if (!site.published) {
-    await db
-      .update(sites)
-      .set({ published: true, updatedAt: new Date() })
-      .where(eq(sites.id, site.id));
-  }
-
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, savedAt: new Date().toISOString() });
 }
