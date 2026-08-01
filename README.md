@@ -140,6 +140,14 @@ configured:
 - Vercel Blob: `BLOB_READ_WRITE_TOKEN`
 - `NEXT_PUBLIC_ROOT_DOMAIN` — `localhost:3000` locally; set to the real apex
   domain in production once one is connected (see Known limitations)
+- `ADMIN_USER_IDS` — comma-separated Clerk user ids allowed into `/admin`
+- `CRON_SECRET` — bearer token the retention job checks
+
+The last two **fail closed**. With `ADMIN_USER_IDS` unset nobody is an admin
+and `/admin` 404s; with `CRON_SECRET` unset the pruning endpoint refuses to
+run rather than executing unauthenticated. That's deliberate — a fresh deploy
+missing its config should do nothing rather than hand over the platform or
+expose a deletion endpoint.
 
 To test subdomains locally, visit `http://<subdomain>.localhost:3000` —
 Chrome resolves `*.localhost` to `127.0.0.1` with no hosts-file edits needed.
@@ -163,6 +171,66 @@ Vercel project: `joshuas-projects-1f0167f5/hykewebcreator`. Neon Postgres,
 Clerk, and Vercel Blob are all provisioned as Marketplace integrations on
 this project (`vercel integration list`), so env vars are already synced —
 `vercel env pull` if `.env.local` goes stale.
+
+### Still to do in production
+
+Both of these exist locally in `.env.local` (gitignored) but **not** on
+Vercel, so neither admin nor the retention job works in production yet:
+
+```bash
+vercel env add ADMIN_USER_IDS   # your Clerk user id, e.g. user_3H00Ub6…
+vercel env add CRON_SECRET      # any long random string
+```
+
+Then redeploy. Nothing breaks without them — `/admin` simply 404s and the
+pruning job declines to run — but the retention periods promised on `/privacy`
+are not being enforced until `CRON_SECRET` exists.
+
+### The cron
+
+`vercel.json` schedules `/api/cron/prune` daily at 03:00. Two things about it:
+
+- Crons are only registered from a **production** deploy, not a preview.
+- On the Hobby plan the schedule is approximate — roughly once a day rather
+  than at 03:00 exactly. That's fine for retention.
+
+You can run it by hand at any time:
+
+```bash
+curl -H "Authorization: Bearer $CRON_SECRET" https://<your-domain>/api/cron/prune
+```
+
+The `$schema` line at the top of `vercel.json` points at Vercel's published
+JSON Schema. It is purely an editor aid — VS Code and similar fetch it to
+offer autocomplete and flag invalid keys. Vercel itself ignores it, and the
+file works the same with the line removed.
+
+## Trust & safety
+
+Three mechanisms, kept deliberately narrow (`src/lib/audit.ts`,
+`src/lib/retention.ts`, `src/app/api/report/route.ts`):
+
+- **Audit trail** — account, action, time, IP and browser string, for
+  consequential actions only: create, publish, unpublish, delete, claim or
+  verify a domain, and admin moderation. No page-by-page tracking, no device
+  fingerprinting. Clerk already holds sessions and devices, so `/admin` reads
+  those live on demand rather than copying them into this database.
+- **Abuse reports** — every published site carries a report link in its footer,
+  no account required. Reports **outlive the site they concern**: the foreign
+  key is `ON DELETE SET NULL` and the site's identity is copied onto the report
+  when filed, so deleting a site can't erase the complaints against it. For a
+  reported site, deletion also snapshots what was published into
+  `preserved_sites`.
+- **Evidence export** — one JSON file per site with the site record, owner and
+  recent Clerk sessions, reports, audit trail and every published version.
+  Enquiry contents are withheld by default: the people who contacted a site
+  aren't the subject of an investigation.
+
+Retention is enforced daily, not merely stated. Open reports are never pruned —
+an unfinished investigation ageing out defeats the point of keeping it.
+
+**Take a suspect site offline rather than deleting it.** Offline preserves
+everything; delete cascades and destroys pages, versions and enquiries.
 
 ## Planned
 
